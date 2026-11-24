@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Logo Bot S.A.R.I.N.G.">
+  <!-- Perisai -->
+  <path d="M50 6 L84 18 V46 C84 68 70 84 50 94 C30 84 16 68 16 46 V18 Z" fill="#667eea"/>
+  <!-- Highlight sisi kiri perisai -->
+  <path d="M50 6 L16 18 V46 C16 68 30 84 50 94 Z" fill="#7c8ff0" opacity="0.45"/>
+  <!-- Lingkaran dalam perisai -->
+  <path d="M50 14 L77 23.5 V46 C77 63 66 76 50 85 C34 76 23 63 23 46 V23.5 Z" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.35"/>
+
+  <!-- Kaca pembesar: gagang -->
+  <line x1="60" y1="60" x2="76" y2="76" stroke="#ecc94b" stroke-width="8" stroke-linecap="round"/>
+  <!-- Kaca pembesar: lensa -->
+  <circle cx="46" cy="46" r="21" fill="#ffffff" stroke="#ecc94b" stroke-width="6"/>
+  <circle cx="46" cy="46" r="15" fill="#eef0fd"/>
+
+  <!-- Tanda centang di dalam lensa -->
+  <path d="M37 47 L43.5 53.5 L56 39" fill="none" stroke="#667eea" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Kilau lensa -->
+  <path d="M34 36 Q37 32 42 31" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Bintang kecil aksen emas -->
+  <path d="M72 24 L74 29 L79 31 L74 33 L72 38 L70 33 L65 31 L70 29 Z" fill="#ecc94b"/>
+</svg>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bot S.A.R.I.N.G. — Teman Digital PKK</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <img src="/img/logo.svg" alt="Logo S.A.R.I.N.G." class="logo-icon" style="width: 50px; height: 50px; object-fit: contain;">
+        <div class="logo-text">
+          <h1>Bot S.A.R.I.N.G.</h1>
+          <p class="tagline">Teman digital cerdas untuk Ibu-ibu PKK</p>
+        </div>
+      </div>
+      <div class="header-badge">Program Pengabdian Mahasiswa</div>
+    </div>
+  </header>
+
+  <!-- NAVIGASI TAB (HANYA SATU) -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="deteksi">🔍 Deteksi AI</button>
+    <button class="tab" data-tab="chat">💬 Chat S.A.R.I.N.G</button>
+    <button class="tab" data-tab="kuis">🎮 Kuis</button>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <h2>Apa itu Bot S.A.R.I.N.G.?</h2>
+    <p>Bot ini membantu ibu-ibu PKK memeriksa pesan berantai, foto, dan video AI yang mencurigakan.</p>
+    <div class="hero-steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <span>Upload gambar atau ketik pertanyaan</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span>Bot memberi analisis + panduan S.A.R.I.N.G.</span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span>Ibu jadi lebih waspada & cerdas digital</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- KONTEN TAB: DETEKSI -->
+  <section id="tab-deteksi" class="tab-content active">
+    <div class="card">
+      <h2>Deteksi Gambar AI</h2>
+      <p>Upload gambar yang Bunda curigai. Sistem akan memberi skor dan penjelasan.</p>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="file-input" accept="image/*" hidden>
+        <p>📸 Klik untuk upload atau drag & drop gambar</p>
+      </div>
+      <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px;">
+      <button id="btn-detect" class="btn-primary" disabled>Analisis Gambar</button>
+      
+      <div id="deteksi-hasil" class="hasil" style="display:none;">
+        <div class="skor-container">
+          <span class="skor-label">Skor AI Detection</span>
+          <span class="skor-angka" id="skor-angka">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="penjelasan" id="penjelasan"></p>
+        <p class="metode" id="metode"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KONTEN TAB: CHAT -->
+  <section id="tab-chat" class="tab-content">
+    <div class="chat-container">
+      <div class="chat-header">
+        <span>🤖 Bot S.A.R.I.N.G.</span>
+        <span class="status">● Online</span>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="message bot">Halo Bunda! 👋 Ketik <b>cek</b>, <b>kuis</b>, <b>menu</b>, atau tanya apa saja! 💐</div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Ketik pesan...">
+        <button id="chat-send" class="btn-send">Kirim</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- KONTEN TAB: KUIS -->
+  <section id="tab-kuis" class="tab-content">
+    <div class="card">
+      <h2>Kuis Detektif Deepfake</h2>
+      <p>Uji kemampuan Bunda mendeteksi gambar AI!</p>
+      
+      <div id="kuis-start-area">
+        <button id="btn-start-kuis" class="btn-primary">Mulai Kuis</button>
+      </div>
+
+      <div id="kuis-area" style="display:none;">
+        <div class="kuis-header">
+          <span>Soal <span id="kuis-nomor">1</span>/<span id="kuis-total">5</span></span>
+          <span>Skor: <b id="kuis-skor">0</b></span>
+        </div>
+        <img id="kuis-gambar" style="max-width: 100%; border-radius: 8px; margin: 16px 0; display:block;">
+        <p id="kuis-pertanyaan" style="font-weight: 600;"></p>
+        <div class="kuis-buttons">
+          <button class="btn-kuis" data-answer="asli">🟢 Asli</button>
+          <button class="btn-kuis" data-answer="ai">🔴 AI</button>
+        </div>
+        <div id="kuis-feedback" class="feedback" style="display:none;"></div>
+      </div>
+
+      <div id="kuis-finish" style="display:none;">
+        <h3 id="finish-badge" style="text-align:center; font-size:1.5rem;"></h3>
+        <p id="finish-skor" style="text-align:center; font-size:1.2rem; color:#667eea; margin-bottom:16px;"></p>
+        <button id="btn-ulang-kuis" class="btn-primary">Ulangi Kuis</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p><strong>Bot S.A.R.I.N.G.</strong> — Program Pengabdian Mahasiswa</p>
+    <p class="footer-sub">Dikembangkan oleh mahasiswa Teknik Informatika & Bisnis Digital</p>
+    <p class="footer-copy">© 2026 — Untuk Ibu-ibu PKK Indonesia 💐</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
