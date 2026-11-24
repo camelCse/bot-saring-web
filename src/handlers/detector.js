@@ -9,7 +9,10 @@ const TEXT_MODEL = 'openai/gpt-oss-120b';
 
 // 1. Coba HuggingFace (Maksimal 5 detik agar tidak timeout Vercel)
 async function tryHF(imagePath) {
-  if (!process.env.HF_TOKEN) return null;
+  if (!process.env.HF_TOKEN) {
+    console.log('[HF] GAGAL: HF_TOKEN tidak ada di Environment Vercel');
+    return null;
+  }
   try {
     const imageBuffer = fs.readFileSync(imagePath);
     const response = await fetch(HF_API, {
@@ -19,16 +22,23 @@ async function tryHF(imagePath) {
         'Content-Type': 'application/octet-stream'
       },
       body: imageBuffer,
-      signal: AbortSignal.timeout(5000) // 5 detik
+      signal: AbortSignal.timeout(6000) // Naikkan ke 6 detik
     });
-    if (!response.ok) return null;
+
+    if (!response.ok) {
+      console.log('[HF] GAGAL: HTTP Status', response.status);
+      return null;
+    }
+
     const data = await response.json();
     if (Array.isArray(data)) {
       const artificial = data.find(d => d.label === 'artificial' || d.label === 'fake');
       if (artificial) return { persen: Math.round(artificial.score * 100), sumber: 'HuggingFace AI' };
     }
+    console.log('[HF] GAGAL: Format response tidak dikenali', data);
     return null;
   } catch (err) {
+    console.log('[HF] GAGAL: Error jaringan / timeout', err.message);
     return null;
   }
 }
