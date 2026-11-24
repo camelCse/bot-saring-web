@@ -174,3 +174,36 @@ footer strong { color: #4c5fd5; }
 .btn-kuis {
   padding: 20px 16px !important; /* Tombol dibuat lebih tebal ke bawah */
 }
+
+/* =========================================
+   PERBAIKAN TATA LETAK HASIL KUIS
+   ========================================= */
+#kuis-finish {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+#finish-badge { 
+  font-size: 1.4rem; 
+  text-align: center; 
+  line-height: 1.4;
+  margin-bottom: 12px; 
+  color: #333;
+}
+
+#finish-skor { 
+  font-size: 1.2rem; 
+  color: #4c5fd5; 
+  font-weight: bold;
+  margin-bottom: 24px; 
+}
+
+/* Memastikan jarak tombol kuis aman dari salah pencet */
+.kuis-buttons {
+  gap: 20px !important; 
+  margin-top: 24px !important;
+  margin-bottom: 24px !important;
+}

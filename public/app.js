@@ -162,8 +162,24 @@ async function sendChat() {
 chatSend.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
-document.querySelectorAll('.quick-btn').forEach(btn => {
-  btn.addEventListener('click', () => { chatInput.value = btn.dataset.msg; sendChat(); });
+document.querySelectorAll('.btn-kuis').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const data = await kuisAction('answer', btn.dataset.answer);
+    if (data.error) { showToast(data.error, 'error'); return; }
+    showFeedback(data.feedback);
+    
+    setTimeout(() => {
+      if (data.action === 'finished') {
+        kuisArea.style.display = 'none';
+        kuisStartArea.style.display = 'none'; // TAMBAHKAN BARIS INI (Sembunyikan tombol Mulai)
+        kuisFinish.style.display = 'block';
+        document.getElementById('finish-badge').textContent = data.badge.emoji + ' ' + data.badge.nama;
+        document.getElementById('finish-skor').textContent = `Skor: ${data.skor}/${data.total} (${data.persen}%)`;
+      } else {
+        renderQuestion(data);
+      }
+    }, 2000);
+  });
 });
 
 // === KUIS === (SAMA SEPERTI SEBELUMNYA)
@@ -229,6 +245,7 @@ document.querySelectorAll('.btn-kuis').forEach(btn => {
 
 document.getElementById('btn-ulang-kuis').addEventListener('click', async () => {
   kuisFinish.style.display = 'none';
+  kuisStartArea.style.display = 'none'; // Pastikan tombol Mulai tetap tersembunyi
   const data = await kuisAction('start');
   renderQuestion(data);
 });
