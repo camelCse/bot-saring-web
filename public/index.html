@@ -62,6 +62,21 @@
       <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px;">
       <button id="btn-detect" class="btn-primary" disabled>Analisis Gambar</button>
       
+            <!-- SKELETON SCREEN LOADING -->
+      <div id="loading-deteksi" style="display: none; margin: 24px 0; padding: 20px; background: #f8f9ff; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <!-- Tulisan Loading -->
+        <p style="color: #667eea; font-weight: 600; margin-bottom: 16px; text-align: center;">⏳ Sedang menganalisis gambar Bunda...</p>
+        
+        <!-- Kerangka Skor -->
+        <div class="skeleton-text" style="width: 40%; height: 20px; margin-bottom: 12px;"></div>
+        <!-- Kerangka Progress Bar -->
+        <div class="skeleton-text" style="width: 100%; height: 12px; margin-bottom: 20px; border-radius: 6px;"></div>
+        <!-- Kerangka Penjelasan -->
+        <div class="skeleton-text" style="width: 100%; height: 16px; margin-bottom: 8px;"></div>
+        <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 8px;"></div>
+        <div class="skeleton-text" style="width: 75%; height: 16px;"></div>
+      </div>
+
       <div id="deteksi-hasil" class="hasil" style="display:none;">
         <div class="skor-container">
           <span class="skor-label">Skor AI Detection</span>

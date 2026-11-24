@@ -47,6 +47,10 @@ app.post('/api/detect', upload.single('image'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Tidak ada gambar' });
 
     const result = await detector.detect(req.file.path);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    fs.unlink(req.file.path, () => {});
+    res.json(result);
     fs.unlink(req.file.path, () => {});
     res.json(result);
   } catch (err) {
@@ -100,7 +104,7 @@ app.get('/', (req, res) => {
 // Error handler global (termasuk error multer)
 app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({ error: 'Gambar terlalu besar. Maksimal 5 MB ya Bun 💐' });
+    return res.status(400).json({ error: 'Gambar terlalu besar. Maksimal 4 MB ya Bun 💐' });
   }
   res.status(500).json({ error: err.message });
 });

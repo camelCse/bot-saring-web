@@ -428,3 +428,16 @@ footer strong {
     gap: 8px;
   }
 }
+
+/* Skeleton Screen Animation */
+.skeleton-text {
+  background: #e2e8f0;
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; background: #cbd5e0; }
+  100% { opacity: 0.6; }
+}
