@@ -108,3 +108,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`\n✅ Bot S.A.R.I.N.G. berjalan di http://localhost:${PORT}\n`);
 });
+
+module.exports = app; 
