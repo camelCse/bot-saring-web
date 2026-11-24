@@ -156,47 +156,16 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
   btn.addEventListener('click', () => { chatInput.value = btn.dataset.msg; sendChat(); });
 });
 
-// === KUIS (MENGGUNAKAN GAMBAR LOKAL + PENGAMAN CADANGAN) ===
+// === KUIS (DENGAN GAMBAR CADANGAN LOKAL) ===
 const QUIZ_DATA = [
-  { 
-    // Pastikan nama file di folder public/img persis seperti ini (huruf kecil)
-    gambar: '/img/ai1.jpg', 
-    pertanyaan: 'Wajah ini asli atau dibuat AI?', 
-    jawaban: 'ai', 
-    penjelasan: 'Ini dibuat AI. Ciri: detail telinga aneh, rambut tidak natural, atau gigi tidak konsisten.' 
-  },
-  { 
-    gambar: '/img/asli1.jpg', 
-    pertanyaan: 'Foto ini asli atau AI?', 
-    jawaban: 'asli', 
-    penjelasan: 'Foto asli. Detail objek, tekstur, dan pencahayaan sangat natural.' 
-  },
-  { 
-    gambar: '/img/ai2.jpg', 
-    pertanyaan: 'Wajah ini asli atau AI?', 
-    jawaban: 'ai', 
-    penjelasan: 'Ini dibuat AI. Perhatikan tekstur kulit yang terlalu halus dan bayangan aneh.' 
-  },
-  { 
-    gambar: '/img/asli2.jpg', 
-    pertanyaan: 'Foto ini asli atau AI?', 
-    jawaban: 'asli', 
-    penjelasan: 'Foto asli. Tidak ada cacat visual atau artefak yang biasanya ada di gambar AI.' 
-  },
-  { 
-    gambar: '/img/ai3.jpg', 
-    pertanyaan: 'Wajah ini asli atau AI?', 
-    jawaban: 'ai', 
-    penjelasan: 'Wajah ini AI. Ciri: anting tidak simetris, atau detail gigi tidak wajar.' 
-  }
+  { gambar: '/img/ai1.jpg', pertanyaan: 'Wajah ini asli atau dibuat AI?', jawaban: 'ai', penjelasan: 'Ini dibuat AI. Ciri: detail telinga aneh, rambut tidak natural, atau gigi tidak konsisten.' },
+  { gambar: '/img/asli1.jpg', pertanyaan: 'Foto ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail objek, tekstur, dan pencahayaan sangat natural.' },
+  { gambar: '/img/ai2.jpg', pertanyaan: 'Wajah ini asli atau AI?', jawaban: 'ai', penjelasan: 'Ini dibuat AI. Perhatikan tekstur kulit yang terlalu halus dan bayangan aneh.' },
+  { gambar: '/img/asli2.jpg', pertanyaan: 'Foto ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Tidak ada cacat visual atau artefak yang biasanya ada di gambar AI.' },
+  { gambar: '/img/ai3.jpg', pertanyaan: 'Wajah ini asli atau AI?', jawaban: 'ai', penjelasan: 'Wajah ini AI. Ciri: anting tidak simetris, atau detail gigi tidak wajar.' }
 ];
 
-let kuisState = {
-  questions: [],
-  current: 0,
-  correct: 0,
-  finished: false
-};
+let kuisState = { questions: [], current: 0, correct: 0, finished: false };
 
 const btnStartKuis = document.getElementById('btn-start-kuis');
 const kuisStartArea = document.getElementById('kuis-start-area');
@@ -205,10 +174,11 @@ const kuisFinish = document.getElementById('kuis-finish');
 const kuisFeedback = document.getElementById('kuis-feedback');
 const kuisGambar = document.getElementById('kuis-gambar');
 
-// JIKA GAMBAR LOKAL GAGAL DIMUAT, TAMPILKAN GAMBAR CADANGAN DARI INTERNET
+// JIKA GAMBAR GAGAL DIMUAT, TAMPILKAN KOTAK ABU-ABU BERTULISAN
 kuisGambar.onerror = function() {
-  console.warn("Gambar lokal gagal dimuat, menggunakan gambar cadangan.");
-  this.src = 'https://placehold.co/500x400/e2e8f0/475569?text=Gambar+Tidak+Dapat+Dimuat';
+  console.warn("Gambar lokal gagal dimuat.");
+  // Gunakan SVG Data URI agar tidak pernah gagal dimuat
+  this.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400"><rect width="500" height="400" fill="%23f8fafc"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" fill="%23666">Gambar Tidak Ditemukan</text></svg>';
 };
 
 function mulaiKuis() {
@@ -232,7 +202,6 @@ function renderQuestion() {
   document.getElementById('kuis-total').textContent = kuisState.questions.length;
   document.getElementById('kuis-skor').textContent = kuisState.correct;
   
-  // SET GAMBAR LOKAL
   kuisGambar.src = q.gambar;
   document.getElementById('kuis-pertanyaan').textContent = q.pertanyaan;
 }
@@ -240,7 +209,6 @@ function renderQuestion() {
 function jawabKuis(jawabanUser) {
   const q = kuisState.questions[kuisState.current];
   const benar = jawabanUser === q.jawaban;
-  
   if (benar) kuisState.correct++;
   
   kuisFeedback.style.display = 'block';
@@ -280,11 +248,7 @@ btnStartKuis.addEventListener('click', () => {
 });
 
 document.querySelectorAll('.btn-kuis').forEach(btn => {
-  btn.addEventListener('click', () => {
-    jawabKuis(btn.dataset.answer);
-  });
+  btn.addEventListener('click', () => { jawabKuis(btn.dataset.answer); });
 });
 
-document.getElementById('btn-ulang-kuis').addEventListener('click', () => {
-  mulaiKuis();
-});
+document.getElementById('btn-ulang-kuis').addEventListener('click', () => { mulaiKuis(); });
