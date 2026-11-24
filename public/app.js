@@ -40,14 +40,13 @@ function handleFile(file) {
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
   
-  // --- MULAI ANIMASI LOADING TOMBOL DETEKSI ---
+  // --- MULAI SKELETON ---
   btnDetect.disabled = true;
-  btnDetect.innerHTML = '<span class="spinner"></span> Sedang Menganalisis...';
-  // --------------------------------------------
-
-  // TAMBAHKAN BARIS INI UNTUK TES:
-  await new Promise(r => setTimeout(r, 3000)); 
-  // --------------------------------------------
+  btnDetect.textContent = 'Menganalisis...';
+  const skeleton = document.getElementById('deteksi-skeleton');
+  skeleton.style.display = 'block'; // Tampilkan skeleton
+  hasilDiv.style.display = 'none';  // Sembunyikan hasil lama
+  // ----------------------
 
   const formData = new FormData();
   formData.append('image', selectedFile);
@@ -57,18 +56,21 @@ btnDetect.addEventListener('click', async () => {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     
+    // --- MATIKAN SKELETON, TAMPILKAN HASIL ---
+    skeleton.style.display = 'none';
     hasilDiv.style.display = 'block';
+    // -----------------------------------------
+    
     document.getElementById('skor-angka').textContent = data.persen_ai + '%';
     document.getElementById('progress-fill').style.width = data.persen_ai + '%';
     document.getElementById('penjelasan').textContent = data.penjelasan;
     document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
   } catch (err) {
+    skeleton.style.display = 'none'; // Pastikan skeleton hilang jika error
     alert('Gagal: ' + err.message);
   } finally {
-    // --- MATIKAN ANIMASI LOADING ---
     btnDetect.disabled = false;
     btnDetect.textContent = 'Analisis Gambar';
-    // -------------------------------
   }
 });
 
@@ -91,7 +93,15 @@ async function sendChat() {
   if (!text) return;
   chatInput.value = '';
   addMessage(text, 'user');
-  const loading = addMessage('⏳ Sedang mengetik...', 'bot');
+  
+  // --- MULAI SKELETON CHAT ---
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'message bot';
+  loadingDiv.innerHTML = '<div class="skeleton-box sk-chat-bubble"></div>';
+  chatMessages.appendChild(loadingDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  // ---------------------------
+
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -99,7 +109,8 @@ async function sendChat() {
       body: JSON.stringify({ message: text, sessionId })
     });
     const data = await res.json();
-    loading.remove();
+    loadingDiv.remove(); // Hapus skeleton
+    
     if (data.reply === '__START_QUIZ__') {
       addMessage('Oke Bunda! Buka tab <b>🎮 Kuis</b> untuk mulai main 💐', 'bot');
       document.querySelector('[data-tab="kuis"]').click();
@@ -107,7 +118,7 @@ async function sendChat() {
       addMessage(data.reply, 'bot');
     }
   } catch {
-    loading.remove();
+    loadingDiv.remove(); // Hapus skeleton jika error
     addMessage('Maaf Bun, ada error. Coba lagi 🙏', 'bot');
   }
 }
