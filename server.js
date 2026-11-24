@@ -25,7 +25,7 @@ const upload = multer({
 });
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Helper: dapatkan IP
 const getIP = (req) => req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
