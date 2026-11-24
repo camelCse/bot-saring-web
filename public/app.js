@@ -156,37 +156,38 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
   btn.addEventListener('click', () => { chatInput.value = btn.dataset.msg; sendChat(); });
 });
 
-// === KUIS (LOGIKA FRONTEND DENGAN GAMBAR STABIL) ===
+// === KUIS (MENGGUNAKAN GAMBAR LOKAL + PENGAMAN CADANGAN) ===
 const QUIZ_DATA = [
   { 
-    gambar: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/President_Barack_Obama.jpg/500px-President_Barack_Obama.jpg', 
-    pertanyaan: 'Foto Barack Obama ini asli atau AI?', 
-    jawaban: 'asli', 
-    penjelasan: 'Foto asli. Detail wajah, tekstur kulit, dan pencahayaan sangat natural.' 
+    // Pastikan nama file di folder public/img persis seperti ini (huruf kecil)
+    gambar: '/img/ai1.jpg', 
+    pertanyaan: 'Wajah ini asli atau dibuat AI?', 
+    jawaban: 'ai', 
+    penjelasan: 'Ini dibuat AI. Ciri: detail telinga aneh, rambut tidak natural, atau gigi tidak konsisten.' 
   },
   { 
-    gambar: 'https://images.unsplash.com/photo-1575936123452-b67c3203c357?q=80&w=500&auto=format&fit=crop', 
-    pertanyaan: 'Foto kamera ini asli atau AI?', 
+    gambar: '/img/asli1.jpg', 
+    pertanyaan: 'Foto ini asli atau AI?', 
     jawaban: 'asli', 
-    penjelasan: 'Foto asli. Teks pada lensa dan pantulan cahaya konsisten.' 
+    penjelasan: 'Foto asli. Detail objek, tekstur, dan pencahayaan sangat natural.' 
   },
   { 
-    gambar: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?q=80&w=500&auto=format&fit=crop', 
-    pertanyaan: 'Foto kucing ini asli atau AI?', 
-    jawaban: 'asli', 
-    penjelasan: 'Foto asli. Detail bulu dan mata kucing terlihat sangat alami.' 
+    gambar: '/img/ai2.jpg', 
+    pertanyaan: 'Wajah ini asli atau AI?', 
+    jawaban: 'ai', 
+    penjelasan: 'Ini dibuat AI. Perhatikan tekstur kulit yang terlalu halus dan bayangan aneh.' 
   },
   { 
-    gambar: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=500&auto=format&fit=crop', 
-    pertanyaan: 'Foto anjing ini asli atau AI?', 
+    gambar: '/img/asli2.jpg', 
+    pertanyaan: 'Foto ini asli atau AI?', 
     jawaban: 'asli', 
-    penjelasan: 'Foto asli. Ekspresi dan detail mata anjing natural.' 
+    penjelasan: 'Foto asli. Tidak ada cacat visual atau artefak yang biasanya ada di gambar AI.' 
   },
   { 
-    gambar: 'https://images.unsplash.com/photo-1506744626753-1fa44f4b2b6a?q=80&w=500&auto=format&fit=crop', 
-    pertanyaan: 'Foto pemandangan ini asli atau AI?', 
-    jawaban: 'asli', 
-    penjelasan: 'Foto asli. Detail alam, kabut, dan pencahayaan konsisten.' 
+    gambar: '/img/ai3.jpg', 
+    pertanyaan: 'Wajah ini asli atau AI?', 
+    jawaban: 'ai', 
+    penjelasan: 'Wajah ini AI. Ciri: anting tidak simetris, atau detail gigi tidak wajar.' 
   }
 ];
 
@@ -204,13 +205,13 @@ const kuisFinish = document.getElementById('kuis-finish');
 const kuisFeedback = document.getElementById('kuis-feedback');
 const kuisGambar = document.getElementById('kuis-gambar');
 
-// JIKA GAMBAR GAGAL DIMUAT (ERROR 404/BLOKIR), TAMPILKAN GAMBAR CADANGAN
+// JIKA GAMBAR LOKAL GAGAL DIMUAT, TAMPILKAN GAMBAR CADANGAN DARI INTERNET
 kuisGambar.onerror = function() {
+  console.warn("Gambar lokal gagal dimuat, menggunakan gambar cadangan.");
   this.src = 'https://placehold.co/500x400/e2e8f0/475569?text=Gambar+Tidak+Dapat+Dimuat';
 };
 
 function mulaiKuis() {
-  // Acak soal
   kuisState.questions = [...QUIZ_DATA].sort(() => Math.random() - 0.5);
   kuisState.current = 0;
   kuisState.correct = 0;
@@ -231,7 +232,7 @@ function renderQuestion() {
   document.getElementById('kuis-total').textContent = kuisState.questions.length;
   document.getElementById('kuis-skor').textContent = kuisState.correct;
   
-  // SET GAMBAR
+  // SET GAMBAR LOKAL
   kuisGambar.src = q.gambar;
   document.getElementById('kuis-pertanyaan').textContent = q.pertanyaan;
 }
@@ -242,7 +243,6 @@ function jawabKuis(jawabanUser) {
   
   if (benar) kuisState.correct++;
   
-  // Tampilkan feedback
   kuisFeedback.style.display = 'block';
   kuisFeedback.className = 'feedback ' + (benar ? 'benar' : 'salah');
   kuisFeedback.innerHTML = (benar ? '✅ Benar!<br>' : `❌ Salah. Jawaban: <b>${q.jawaban}</b><br>`) + q.penjelasan;
@@ -251,10 +251,9 @@ function jawabKuis(jawabanUser) {
   
   setTimeout(() => {
     if (kuisState.current >= kuisState.questions.length) {
-      // KUIS SELESAI
       kuisState.finished = true;
       kuisArea.style.display = 'none';
-      kuisFinish.style.display = 'flex'; // Gunakan flex agar rapi di tengah
+      kuisFinish.style.display = 'flex'; 
       
       const persen = Math.round((kuisState.correct / kuisState.questions.length) * 100);
       let badgeEmoji = '💪', badgeNama = 'Calon Detektif';
@@ -265,7 +264,6 @@ function jawabKuis(jawabanUser) {
       document.getElementById('finish-badge').textContent = `${badgeEmoji} ${badgeNama}`;
       document.getElementById('finish-skor').textContent = `Skor: ${kuisState.correct}/${kuisState.questions.length} (${persen}%)`;
     } else {
-      // LANJUT SOAL BERIKUTNYA
       renderQuestion();
     }
   }, 2000);
