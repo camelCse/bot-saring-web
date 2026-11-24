@@ -14,15 +14,16 @@ const uploadArea = document.getElementById('upload-area');
 const fileInput = document.getElementById('file-input');
 const preview = document.getElementById('preview');
 const btnDetect = document.getElementById('btn-detect');
+const btnHelperText = document.getElementById('btn-helper-text');
 const hasilDiv = document.getElementById('deteksi-hasil');
 let selectedFile = null;
 
 uploadArea.addEventListener('click', () => fileInput.click());
-uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = '#667eea'; });
-uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = ''; });
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = '#4c5fd5'; });
+uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = '#94a3b8'; });
 uploadArea.addEventListener('drop', e => {
   e.preventDefault();
-  uploadArea.style.borderColor = '';
+  uploadArea.style.borderColor = '#94a3b8';
   if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
@@ -32,49 +33,30 @@ function handleFile(file) {
   preview.src = URL.createObjectURL(file);
   preview.style.display = 'block';
   btnDetect.disabled = false;
+  btnHelperText.style.display = 'none'; // Sembunyikan teks "Pilih foto dulu"
   hasilDiv.style.display = 'none';
 }
 
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
-  
-  const loadingDiv = document.getElementById('loading-deteksi');
-  if (loadingDiv) loadingDiv.style.display = 'block';
-  btnDetect.style.display = 'none';
-  hasilDiv.style.display = 'none';
-
+  btnDetect.disabled = true;
+  btnDetect.textContent = 'Menganalisis...';
   const formData = new FormData();
   formData.append('image', selectedFile);
-  
   try {
-    const fetchPromise = fetch('/api/detect', { method: 'POST', body: formData });
-    const delayPromise = new Promise(resolve => setTimeout(resolve, 1500)); // Paksa loading 1.5 detik
-    const [res] = await Promise.all([fetchPromise, delayPromise]);
-    
-    if (!res.ok) {
-      throw new Error(`Server Error (${res.status}). Pastikan gambar di bawah 4MB.`);
-    }
-
+    const res = await fetch('/api/detect', { method: 'POST', body: formData });
     const data = await res.json();
-    
     if (data.error) throw new Error(data.error);
-    
-    if (loadingDiv) loadingDiv.style.display = 'none';
-    btnDetect.style.display = 'block';
     hasilDiv.style.display = 'block';
-    
     document.getElementById('skor-angka').textContent = data.persen_ai + '%';
     document.getElementById('progress-fill').style.width = data.persen_ai + '%';
-    
-    const penjelasanTeks = data.penjelasan || "Bunda, gambar ini telah dianalisis. Harap tetap waspada terhadap konten yang mencurigakan.";
-    document.getElementById('penjelasan').textContent = penjelasanTeks;
-    document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'Sistem Analisis');
-
+    document.getElementById('penjelasan').textContent = data.penjelasan;
+    document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
   } catch (err) {
-    if (loadingDiv) loadingDiv.style.display = 'none';
-    btnDetect.style.display = 'block';
-    btnDetect.disabled = false;
     alert('Gagal: ' + err.message);
+  } finally {
+    btnDetect.disabled = false;
+    btnDetect.textContent = 'Analisis Gambar';
   }
 });
 
@@ -98,7 +80,6 @@ async function sendChat() {
   chatInput.value = '';
   addMessage(text, 'user');
   const loading = addMessage('⏳ Sedang mengetik...', 'bot');
-  
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -107,24 +88,28 @@ async function sendChat() {
     });
     const data = await res.json();
     loading.remove();
-    
     if (data.reply === '__START_QUIZ__') {
       addMessage('Oke Bunda! Buka tab <b>🎮 Kuis</b> untuk mulai main 💐', 'bot');
       document.querySelector('[data-tab="kuis"]').click();
-    } else if (!data.reply || data.reply.trim() === '') {
-      // PENGAMAN: Jika bot membalas kosong
-      addMessage('Maaf Bun, saya belum bisa menjawab pertanyaan itu. Bisa coba tanya dengan kalimat lain? 💐', 'bot');
     } else {
       addMessage(data.reply, 'bot');
     }
   } catch {
     loading.remove();
-    addMessage('Maaf Bun, koneksi sedang sibuk. Coba tanya lagi sebentar ya 🙏', 'bot');
+    addMessage('Maaf Bun, ada error. Coba lagi 🙏', 'bot');
   }
 }
 
 chatSend.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
+
+// LOGIKA QUICK REPLIES
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    chatInput.value = btn.dataset.msg;
+    sendChat();
+  });
+});
 
 // === KUIS ===
 const btnStartKuis = document.getElementById('btn-start-kuis');
@@ -149,7 +134,7 @@ function renderQuestion(data) {
   document.getElementById('kuis-nomor').textContent = data.nomor;
   document.getElementById('kuis-total').textContent = data.total;
   document.getElementById('kuis-skor').textContent = data.skor;
-  document.getElementById('kuis-gambar').src = data.gambar + (data.gambar.includes('?') ? '&' : '?') + 't=' + Date.now();
+  document.getElementById('kuis-gambar').src = data.gambar;
   document.getElementById('kuis-pertanyaan').textContent = data.pertanyaan;
 }
 
