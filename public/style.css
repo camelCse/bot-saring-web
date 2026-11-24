@@ -106,10 +106,22 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 .btn-send:hover { background: #3b4cb8; transform: translateY(-2px); }
 
 /* =========================================
-   FITUR KUIS (DIPERBAIKI TOTAL)
+   FITUR KUIS
    ========================================= */
 .kuis-header { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 2px solid #e2e8f0; font-weight: 600; font-size: 1.05rem; margin-bottom: 16px; color:#333; }
-#kuis-gambar { width: 100%; height: auto; border-radius: 8px; margin: 16px 0; display: block; clip-path: inset(0 0 8% 0); }
+
+/* GAMBAR KUIS DENGAN BATASAN TINGGI AGAR RAPI */
+#kuis-gambar { 
+  width: 100%; 
+  max-height: 300px; 
+  object-fit: cover; 
+  object-position: center top;
+  border-radius: 8px; 
+  margin: 16px 0; 
+  display: block; 
+  background-color: #f8fafc;
+}
+
 .kuis-buttons { display: flex; gap: 20px !important; margin: 24px 0 !important; }
 .btn-kuis { flex: 1; padding: 20px 16px !important; font-size: 1.1rem; font-weight: 600; border: 2px solid #e2e8f0; background: white; border-radius: 12px; cursor: pointer; transition: 0.2s; color: #333; }
 .btn-kuis[data-answer="asli"]:hover { border-color: #48bb78; background: #f0fff4; transform: translateY(-2px); }

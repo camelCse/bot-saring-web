@@ -156,13 +156,38 @@ document.querySelectorAll('.quick-btn').forEach(btn => {
   btn.addEventListener('click', () => { chatInput.value = btn.dataset.msg; sendChat(); });
 });
 
-// === KUIS (LOGIKA PINDAH KE FRONTEND AGAR ANTI-ERROR DI VERCEL) ===
+// === KUIS (LOGIKA FRONTEND DENGAN GAMBAR STABIL) ===
 const QUIZ_DATA = [
-  { gambar: 'https://picsum.photos/id/1015/500/400', pertanyaan: 'Foto pemandangan gunung ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail alam, kabut, dan pencahayaan konsisten.' },
-  { gambar: 'https://picsum.photos/id/237/500/400', pertanyaan: 'Foto anjing hitam ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail bulu dan mata anjing natural.' },
-  { gambar: 'https://picsum.photos/id/1025/500/400', pertanyaan: 'Foto anjing pug ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Kerutan dan tekstur kulit pug terlihat natural.' },
-  { gambar: 'https://picsum.photos/id/1062/500/400', pertanyaan: 'Foto kucing ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail bulu, mata, dan kumis konsisten.' },
-  { gambar: 'https://picsum.photos/id/1074/500/400', pertanyaan: 'Foto singa ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail bulu dan bayangan natural.' }
+  { 
+    gambar: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/President_Barack_Obama.jpg/500px-President_Barack_Obama.jpg', 
+    pertanyaan: 'Foto Barack Obama ini asli atau AI?', 
+    jawaban: 'asli', 
+    penjelasan: 'Foto asli. Detail wajah, tekstur kulit, dan pencahayaan sangat natural.' 
+  },
+  { 
+    gambar: 'https://images.unsplash.com/photo-1575936123452-b67c3203c357?q=80&w=500&auto=format&fit=crop', 
+    pertanyaan: 'Foto kamera ini asli atau AI?', 
+    jawaban: 'asli', 
+    penjelasan: 'Foto asli. Teks pada lensa dan pantulan cahaya konsisten.' 
+  },
+  { 
+    gambar: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?q=80&w=500&auto=format&fit=crop', 
+    pertanyaan: 'Foto kucing ini asli atau AI?', 
+    jawaban: 'asli', 
+    penjelasan: 'Foto asli. Detail bulu dan mata kucing terlihat sangat alami.' 
+  },
+  { 
+    gambar: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=500&auto=format&fit=crop', 
+    pertanyaan: 'Foto anjing ini asli atau AI?', 
+    jawaban: 'asli', 
+    penjelasan: 'Foto asli. Ekspresi dan detail mata anjing natural.' 
+  },
+  { 
+    gambar: 'https://images.unsplash.com/photo-1506744626753-1fa44f4b2b6a?q=80&w=500&auto=format&fit=crop', 
+    pertanyaan: 'Foto pemandangan ini asli atau AI?', 
+    jawaban: 'asli', 
+    penjelasan: 'Foto asli. Detail alam, kabut, dan pencahayaan konsisten.' 
+  }
 ];
 
 let kuisState = {
@@ -177,6 +202,12 @@ const kuisStartArea = document.getElementById('kuis-start-area');
 const kuisArea = document.getElementById('kuis-area');
 const kuisFinish = document.getElementById('kuis-finish');
 const kuisFeedback = document.getElementById('kuis-feedback');
+const kuisGambar = document.getElementById('kuis-gambar');
+
+// JIKA GAMBAR GAGAL DIMUAT (ERROR 404/BLOKIR), TAMPILKAN GAMBAR CADANGAN
+kuisGambar.onerror = function() {
+  this.src = 'https://placehold.co/500x400/e2e8f0/475569?text=Gambar+Tidak+Dapat+Dimuat';
+};
 
 function mulaiKuis() {
   // Acak soal
@@ -199,7 +230,9 @@ function renderQuestion() {
   document.getElementById('kuis-nomor').textContent = kuisState.current + 1;
   document.getElementById('kuis-total').textContent = kuisState.questions.length;
   document.getElementById('kuis-skor').textContent = kuisState.correct;
-  document.getElementById('kuis-gambar').src = q.gambar;
+  
+  // SET GAMBAR
+  kuisGambar.src = q.gambar;
   document.getElementById('kuis-pertanyaan').textContent = q.pertanyaan;
 }
 
@@ -221,7 +254,7 @@ function jawabKuis(jawabanUser) {
       // KUIS SELESAI
       kuisState.finished = true;
       kuisArea.style.display = 'none';
-      kuisFinish.style.display = 'block';
+      kuisFinish.style.display = 'flex'; // Gunakan flex agar rapi di tengah
       
       const persen = Math.round((kuisState.correct / kuisState.questions.length) * 100);
       let badgeEmoji = '💪', badgeNama = 'Calon Detektif';
