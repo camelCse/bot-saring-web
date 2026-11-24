@@ -7,8 +7,6 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
-
 function showToast(message, type = 'error') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
@@ -29,13 +27,6 @@ const deteksiSubtitle = document.getElementById('deteksi-subtitle');
 let selectedFile = null;
 
 uploadArea.addEventListener('click', () => fileInput.click());
-uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = '#4c5fd5'; });
-uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = '#94a3b8'; });
-uploadArea.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadArea.style.borderColor = '#94a3b8';
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
 fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
 function handleFile(file) {
@@ -48,7 +39,6 @@ function handleFile(file) {
   skeletonDiv.style.display = 'none';
 }
 
-// LOGIKA TOMBOL COBA FOTO LAIN
 btnReset.addEventListener('click', () => {
   selectedFile = null;
   fileInput.value = '';
@@ -85,7 +75,6 @@ btnDetect.addEventListener('click', async () => {
     document.getElementById('penjelasan').textContent = data.penjelasan;
     document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
 
-    // --- LOGIKA EMPATI (COPYWRITING) ---
     const skorLabel = document.getElementById('skor-label-teks');
     if (data.persen_ai > 65) {
       skorLabel.textContent = "Indikasi Buatan AI";
@@ -110,7 +99,8 @@ btnDetect.addEventListener('click', async () => {
   }
 });
 
-// === CHAT === (SAMA SEPERTI SEBELUMNYA)
+// === CHAT ===
+const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
@@ -162,90 +152,108 @@ async function sendChat() {
 chatSend.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
-document.querySelectorAll('.btn-kuis').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const data = await kuisAction('answer', btn.dataset.answer);
-    if (data.error) { showToast(data.error, 'error'); return; }
-    showFeedback(data.feedback);
-    
-    setTimeout(() => {
-      if (data.action === 'finished') {
-        kuisArea.style.display = 'none';
-        kuisStartArea.style.display = 'none'; // TAMBAHKAN BARIS INI (Sembunyikan tombol Mulai)
-        kuisFinish.style.display = 'block';
-        document.getElementById('finish-badge').textContent = data.badge.emoji + ' ' + data.badge.nama;
-        document.getElementById('finish-skor').textContent = `Skor: ${data.skor}/${data.total} (${data.persen}%)`;
-      } else {
-        renderQuestion(data);
-      }
-    }, 2000);
-  });
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => { chatInput.value = btn.dataset.msg; sendChat(); });
 });
 
-// === KUIS === (SAMA SEPERTI SEBELUMNYA)
+// === KUIS (LOGIKA PINDAH KE FRONTEND AGAR ANTI-ERROR DI VERCEL) ===
+const QUIZ_DATA = [
+  { gambar: 'https://picsum.photos/id/1015/500/400', pertanyaan: 'Foto pemandangan gunung ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail alam, kabut, dan pencahayaan konsisten.' },
+  { gambar: 'https://picsum.photos/id/237/500/400', pertanyaan: 'Foto anjing hitam ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail bulu dan mata anjing natural.' },
+  { gambar: 'https://picsum.photos/id/1025/500/400', pertanyaan: 'Foto anjing pug ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Kerutan dan tekstur kulit pug terlihat natural.' },
+  { gambar: 'https://picsum.photos/id/1062/500/400', pertanyaan: 'Foto kucing ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail bulu, mata, dan kumis konsisten.' },
+  { gambar: 'https://picsum.photos/id/1074/500/400', pertanyaan: 'Foto singa ini asli atau AI?', jawaban: 'asli', penjelasan: 'Foto asli. Detail bulu dan bayangan natural.' }
+];
+
+let kuisState = {
+  questions: [],
+  current: 0,
+  correct: 0,
+  finished: false
+};
+
 const btnStartKuis = document.getElementById('btn-start-kuis');
 const kuisStartArea = document.getElementById('kuis-start-area');
 const kuisArea = document.getElementById('kuis-area');
 const kuisFinish = document.getElementById('kuis-finish');
 const kuisFeedback = document.getElementById('kuis-feedback');
 
-async function kuisAction(action, answer = null) {
-  const res = await fetch('/api/quiz', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, answer, sessionId })
-  });
-  return res.json();
-}
-
-function renderQuestion(data) {
-  kuisArea.style.display = 'block';
+function mulaiKuis() {
+  // Acak soal
+  kuisState.questions = [...QUIZ_DATA].sort(() => Math.random() - 0.5);
+  kuisState.current = 0;
+  kuisState.correct = 0;
+  kuisState.finished = false;
+  
+  kuisStartArea.style.display = 'none';
   kuisFinish.style.display = 'none';
+  kuisArea.style.display = 'block';
+  
+  renderQuestion();
+}
+
+function renderQuestion() {
   kuisFeedback.style.display = 'none';
-  document.getElementById('kuis-nomor').textContent = data.nomor;
-  document.getElementById('kuis-total').textContent = data.total;
-  document.getElementById('kuis-skor').textContent = data.skor;
-  document.getElementById('kuis-gambar').src = data.gambar;
-  document.getElementById('kuis-pertanyaan').textContent = data.pertanyaan;
+  const q = kuisState.questions[kuisState.current];
+  
+  document.getElementById('kuis-nomor').textContent = kuisState.current + 1;
+  document.getElementById('kuis-total').textContent = kuisState.questions.length;
+  document.getElementById('kuis-skor').textContent = kuisState.correct;
+  document.getElementById('kuis-gambar').src = q.gambar;
+  document.getElementById('kuis-pertanyaan').textContent = q.pertanyaan;
 }
 
-function showFeedback(feedback) {
+function jawabKuis(jawabanUser) {
+  const q = kuisState.questions[kuisState.current];
+  const benar = jawabanUser === q.jawaban;
+  
+  if (benar) kuisState.correct++;
+  
+  // Tampilkan feedback
   kuisFeedback.style.display = 'block';
-  kuisFeedback.className = 'feedback ' + (feedback.benar ? 'benar' : 'salah');
-  kuisFeedback.innerHTML = (feedback.benar ? '✅ Benar!<br>' : `❌ Salah. Jawaban: <b>${feedback.jawaban_benar}</b><br>`) + feedback.penjelasan;
+  kuisFeedback.className = 'feedback ' + (benar ? 'benar' : 'salah');
+  kuisFeedback.innerHTML = (benar ? '✅ Benar!<br>' : `❌ Salah. Jawaban: <b>${q.jawaban}</b><br>`) + q.penjelasan;
+  
+  kuisState.current++;
+  
+  setTimeout(() => {
+    if (kuisState.current >= kuisState.questions.length) {
+      // KUIS SELESAI
+      kuisState.finished = true;
+      kuisArea.style.display = 'none';
+      kuisFinish.style.display = 'block';
+      
+      const persen = Math.round((kuisState.correct / kuisState.questions.length) * 100);
+      let badgeEmoji = '💪', badgeNama = 'Calon Detektif';
+      if (persen >= 90) { badgeEmoji = '🏆'; badgeNama = 'Detektif Level 3'; }
+      else if (persen >= 60) { badgeEmoji = '🥈'; badgeNama = 'Detektif Level 2'; }
+      else if (persen >= 40) { badgeEmoji = '🥉'; badgeNama = 'Detektif Level 1'; }
+      
+      document.getElementById('finish-badge').textContent = `${badgeEmoji} ${badgeNama}`;
+      document.getElementById('finish-skor').textContent = `Skor: ${kuisState.correct}/${kuisState.questions.length} (${persen}%)`;
+    } else {
+      // LANJUT SOAL BERIKUTNYA
+      renderQuestion();
+    }
+  }, 2000);
 }
 
-btnStartKuis.addEventListener('click', async () => {
+btnStartKuis.addEventListener('click', () => {
   btnStartKuis.disabled = true;
   btnStartKuis.textContent = 'Memuat Soal...';
-  await new Promise(r => setTimeout(r, 1000));
-  const data = await kuisAction('start');
-  renderQuestion(data);
-  btnStartKuis.disabled = false;
-  btnStartKuis.textContent = '🎮 Mulai Kuis';
+  setTimeout(() => {
+    btnStartKuis.disabled = false;
+    btnStartKuis.textContent = '🎮 Mulai Kuis';
+    mulaiKuis();
+  }, 500);
 });
 
 document.querySelectorAll('.btn-kuis').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const data = await kuisAction('answer', btn.dataset.answer);
-    if (data.error) { showToast(data.error, 'error'); return; }
-    showFeedback(data.feedback);
-    setTimeout(() => {
-      if (data.action === 'finished') {
-        kuisArea.style.display = 'none';
-        kuisFinish.style.display = 'block';
-        document.getElementById('finish-badge').textContent = data.badge.emoji + ' ' + data.badge.nama;
-        document.getElementById('finish-skor').textContent = `Skor: ${data.skor}/${data.total} (${data.persen}%)`;
-      } else {
-        renderQuestion(data);
-      }
-    }, 2000);
+  btn.addEventListener('click', () => {
+    jawabKuis(btn.dataset.answer);
   });
 });
 
-document.getElementById('btn-ulang-kuis').addEventListener('click', async () => {
-  kuisFinish.style.display = 'none';
-  kuisStartArea.style.display = 'none'; // Pastikan tombol Mulai tetap tersembunyi
-  const data = await kuisAction('start');
-  renderQuestion(data);
+document.getElementById('btn-ulang-kuis').addEventListener('click', () => {
+  mulaiKuis();
 });

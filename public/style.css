@@ -5,26 +5,16 @@
 body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #f0f4f8; color: #333; }
 
 /* =========================================
-   TOAST NOTIFICATION (PENGGANTI ALERT)
+   TOAST NOTIFICATION
    ========================================= */
 .toast {
-  position: fixed;
-  bottom: -100px; /* Sembunyi di bawah layar */
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 30px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 9999;
-  transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Animasi memantul */
-  max-width: 90%;
-  text-align: center;
+  position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+  background: #333; color: white; padding: 12px 24px; border-radius: 30px;
+  font-size: 0.95rem; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999; transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  max-width: 90%; text-align: center;
 }
-.toast.show { bottom: 30px; } /* Muncul ke atas */
+.toast.show { bottom: 30px; }
 .toast.error { background: #e53e3e; }
 .toast.success { background: #38a169; }
 
@@ -39,7 +29,7 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 .logo-text .tagline { font-size: 0.85rem; opacity: 1; margin-top: 2px; color: #e2e8f0; }
 
 /* =========================================
-   TABS (DENGAN EFEK TRANSISI)
+   TABS
    ========================================= */
 .tabs { display: flex; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
 .tab { flex: 1; padding: 16px 8px; border: none; background: none; cursor: pointer; font-size: 0.95rem; color: #555; border-bottom: 3px solid transparent; font-weight: 600; white-space: nowrap; transition: 0.2s; }
@@ -51,37 +41,15 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 .hero-compact { max-width: 800px; margin: 16px auto 0; padding: 12px 16px; background: #e0e7ff; border-radius: 8px; text-align: center; color: #3730a3; font-size: 0.9rem; }
 
 /* =========================================
-   TAB CONTENT & ANIMASI FADE-IN
+   TAB CONTENT & CARDS
    ========================================= */
 .tab-content { display: none; padding: 16px; max-width: 800px; margin: 0 auto; }
-.tab-content.active { 
-  display: block; 
-  animation: fadeIn 0.4s ease-out; /* ANIMASI MUNCUL HALUS */
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.tab-content.active { display: block; animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .card h2 { font-size: 1.3rem; margin-bottom: 8px; color: #333; }
 .card > p { color: #555; font-size: 0.95rem; margin-bottom: 20px; }
-
-/* =========================================
-   TOMBOL (DENGAN EFEK HOVER & SHADOW)
-   ========================================= */
-.btn-primary { 
-  display: block; width: 100%; padding: 14px; 
-  background: #4c5fd5; color: white; border: none; border-radius: 8px; 
-  font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 16px; 
-  transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(76, 95, 213, 0.2);
-}
-.btn-primary:hover:not(:disabled) { 
-  background: #3b4cb8; 
-  transform: translateY(-2px); /* Efek terangkat */
-  box-shadow: 0 6px 12px rgba(76, 95, 213, 0.3);
-}
-.btn-primary:disabled { background: #cbd5e0; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
 
 /* =========================================
    FITUR DETEKSI
@@ -89,6 +57,11 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 .upload-area { border: 2px dashed #94a3b8; border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: 0.2s; background: #f8fafc; }
 .upload-area:hover { border-color: #4c5fd5; background: #f0f4f8; }
 .upload-area p { color: #475569; font-weight: 600; font-size: 1rem; }
+.btn-primary { display: block; width: 100%; padding: 14px; background: #4c5fd5; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 16px; transition: 0.2s; box-shadow: 0 4px 6px rgba(76, 95, 213, 0.2); }
+.btn-primary:hover:not(:disabled) { background: #3b4cb8; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(76, 95, 213, 0.3); }
+.btn-primary:disabled { background: #cbd5e0; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+.btn-secondary { display: block; width: 100%; padding: 12px; background: white; color: #4c5fd5; border: 2px solid #4c5fd5; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-secondary:hover { background: #e0e7ff; }
 
 .hasil { margin-top: 24px; padding: 20px; background: #f8f9ff; border-radius: 12px; border: 1px solid #e2e8f0; }
 .skor-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -100,15 +73,10 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 .metode { margin-top: 12px; font-size: 0.75rem; color: #666; font-style: italic; }
 
 /* =========================================
-   SKELETON SCREEN ANIMATION
+   SKELETON SCREEN
    ========================================= */
 .skeleton-box { display: inline-block; position: relative; overflow: hidden; background-color: #e2e8f0; border-radius: 6px; }
-.skeleton-box::after {
-  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.4) 20%, rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0) 100%);
-  animation: shimmer 1.5s infinite; content: '';
-}
+.skeleton-box::after { position: absolute; top: 0; right: 0; bottom: 0; left: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.4) 20%, rgba(255, 255, 255, 0.7) 60%, rgba(255, 255, 255, 0) 100%); animation: shimmer 1.5s infinite; content: ''; }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 .sk-title { width: 40%; height: 20px; margin-bottom: 12px; }
 .sk-bar { width: 100%; height: 12px; margin-bottom: 16px; }
@@ -138,17 +106,28 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 .btn-send:hover { background: #3b4cb8; transform: translateY(-2px); }
 
 /* =========================================
-   FITUR KUIS
+   FITUR KUIS (DIPERBAIKI TOTAL)
    ========================================= */
 .kuis-header { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 2px solid #e2e8f0; font-weight: 600; font-size: 1.05rem; margin-bottom: 16px; color:#333; }
 #kuis-gambar { width: 100%; height: auto; border-radius: 8px; margin: 16px 0; display: block; clip-path: inset(0 0 8% 0); }
-.kuis-buttons { display: flex; gap: 12px; margin: 20px 0; }
-.btn-kuis { flex: 1; padding: 16px; font-size: 1.1rem; font-weight: 600; border: 2px solid #e2e8f0; background: white; border-radius: 12px; cursor: pointer; transition: 0.2s; color: #333; }
+.kuis-buttons { display: flex; gap: 20px !important; margin: 24px 0 !important; }
+.btn-kuis { flex: 1; padding: 20px 16px !important; font-size: 1.1rem; font-weight: 600; border: 2px solid #e2e8f0; background: white; border-radius: 12px; cursor: pointer; transition: 0.2s; color: #333; }
 .btn-kuis[data-answer="asli"]:hover { border-color: #48bb78; background: #f0fff4; transform: translateY(-2px); }
 .btn-kuis[data-answer="ai"]:hover { border-color: #f56565; background: #fff5f5; transform: translateY(-2px); }
 .feedback { padding: 16px; border-radius: 12px; margin-top: 16px; font-size: 0.95rem; line-height: 1.5; color:#333; }
 .feedback.benar { background: #c6f6d5; border: 1px solid #9ae6b4; }
 .feedback.salah { background: #fed7d7; border: 1px solid #feb2b2; }
+
+#kuis-finish {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+}
+#finish-badge { font-size: 1.4rem; line-height: 1.4; margin-bottom: 12px; color: #333; }
+#finish-skor { font-size: 1.2rem; color: #4c5fd5; font-weight: bold; margin-bottom: 24px; }
 
 /* =========================================
    FOOTER
@@ -157,53 +136,3 @@ footer { text-align: center; padding: 32px 16px; margin-top: 40px; color: #555; 
 footer strong { color: #4c5fd5; }
 .footer-sub { font-size: 0.8rem; color: #666; margin-top: 6px; }
 .footer-copy { font-size: 0.8rem; color: #666; margin-top: 12px; }
-
-/* TOMBOL SEKUNDER (COBA FOTO LAIN) */
-.btn-secondary {
-  display: block; width: 100%; padding: 12px;
-  background: white; color: #4c5fd5; border: 2px solid #4c5fd5; 
-  border-radius: 8px; font-size: 1rem; font-weight: 600; 
-  cursor: pointer; transition: 0.2s;
-}
-.btn-secondary:hover { background: #e0e7ff; }
-
-/* MEMPERLEBAR JARAK TOMBOL KUIS (ANTI SALAH PENCET) */
-.kuis-buttons {
-  gap: 20px !important; /* Jarak antar tombol Asli dan AI diperlebar */
-}
-.btn-kuis {
-  padding: 20px 16px !important; /* Tombol dibuat lebih tebal ke bawah */
-}
-
-/* =========================================
-   PERBAIKAN TATA LETAK HASIL KUIS
-   ========================================= */
-#kuis-finish {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-}
-
-#finish-badge { 
-  font-size: 1.4rem; 
-  text-align: center; 
-  line-height: 1.4;
-  margin-bottom: 12px; 
-  color: #333;
-}
-
-#finish-skor { 
-  font-size: 1.2rem; 
-  color: #4c5fd5; 
-  font-weight: bold;
-  margin-bottom: 24px; 
-}
-
-/* Memastikan jarak tombol kuis aman dari salah pencet */
-.kuis-buttons {
-  gap: 20px !important; 
-  margin-top: 24px !important;
-  margin-bottom: 24px !important;
-}
