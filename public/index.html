@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bot S.A.R.I.N.G. — Teman Digital PKK</title>
-  <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+  <!-- GANTI dengan nama file logo kalian -->
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg"> 
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,69 +14,41 @@
   <header>
     <div class="header-inner">
       <div class="logo">
-        <img src="/img/logo.svg" alt="Logo S.A.R.I.N.G." class="logo-icon" style="width: 50px; height: 50px; object-fit: contain;">
+        <!-- GANTI dengan logo kalian jika ada -->
+        <div class="logo-icon">🛡️</div>
         <div class="logo-text">
           <h1>Bot S.A.R.I.N.G.</h1>
           <p class="tagline">Teman digital cerdas untuk Ibu-ibu PKK</p>
         </div>
       </div>
-      <div class="header-badge">Program Pengabdian Mahasiswa</div>
     </div>
   </header>
 
-  <!-- NAVIGASI TAB (HANYA SATU) -->
+  <!-- NAVIGASI TAB (DIPERBAIKI) -->
   <nav class="tabs">
     <button class="tab active" data-tab="deteksi">🔍 Deteksi AI</button>
-    <button class="tab" data-tab="chat">💬 Chat S.A.R.I.N.G</button>
+    <button class="tab" data-tab="chat">💬 Chat</button>
     <button class="tab" data-tab="kuis">🎮 Kuis</button>
   </nav>
 
-  <!-- HERO SECTION -->
-  <section class="hero">
-    <h2>Apa itu Bot S.A.R.I.N.G.?</h2>
-    <p>Bot ini membantu ibu-ibu PKK memeriksa pesan berantai, foto, dan video AI yang mencurigakan.</p>
-    <div class="hero-steps">
-      <div class="step">
-        <span class="step-num">1</span>
-        <span>Upload gambar atau ketik pertanyaan</span>
-      </div>
-      <div class="step">
-        <span class="step-num">2</span>
-        <span>Bot memberi analisis + panduan S.A.R.I.N.G.</span>
-      </div>
-      <div class="step">
-        <span class="step-num">3</span>
-        <span>Ibu jadi lebih waspada & cerdas digital</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- KONTEN TAB: DETEKSI -->
+  <!-- KONTEN TAB: DETEKSI (HERO DIPINDAH KE SINI) -->
   <section id="tab-deteksi" class="tab-content active">
+    <div class="hero-compact">
+      <p><strong>Cara Pakai:</strong> Upload gambar ➔ Cek hasil ➔ Jadi lebih waspada.</p>
+    </div>
+
     <div class="card">
       <h2>Deteksi Gambar AI</h2>
       <p>Upload gambar yang Bunda curigai. Sistem akan memberi skor dan penjelasan.</p>
       <div class="upload-area" id="upload-area">
         <input type="file" id="file-input" accept="image/*" hidden>
-        <p>📸 Klik untuk upload atau drag & drop gambar</p>
+        <p>📷 Ketuk untuk pilih foto</p>
       </div>
       <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px;">
-      <button id="btn-detect" class="btn-primary" disabled>Analisis Gambar</button>
       
-            <!-- SKELETON SCREEN LOADING -->
-      <div id="loading-deteksi" style="display: none; margin: 24px 0; padding: 20px; background: #f8f9ff; border-radius: 12px; border: 1px solid #e2e8f0;">
-        <!-- Tulisan Loading -->
-        <p style="color: #667eea; font-weight: 600; margin-bottom: 16px; text-align: center;">⏳ Sedang menganalisis gambar Bunda...</p>
-        
-        <!-- Kerangka Skor -->
-        <div class="skeleton-text" style="width: 40%; height: 20px; margin-bottom: 12px;"></div>
-        <!-- Kerangka Progress Bar -->
-        <div class="skeleton-text" style="width: 100%; height: 12px; margin-bottom: 20px; border-radius: 6px;"></div>
-        <!-- Kerangka Penjelasan -->
-        <div class="skeleton-text" style="width: 100%; height: 16px; margin-bottom: 8px;"></div>
-        <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 8px;"></div>
-        <div class="skeleton-text" style="width: 75%; height: 16px;"></div>
-      </div>
+      <!-- TOMBOL DIPERBAIKI: Tambah teks bantuan kecil -->
+      <button id="btn-detect" class="btn-primary" disabled>Analisis Gambar</button>
+      <p id="btn-helper-text" style="text-align:center; font-size:0.8rem; color:#666; margin-top:8px;">Pilih foto dulu ya Bun</p>
 
       <div id="deteksi-hasil" class="hasil" style="display:none;">
         <div class="skor-container">
@@ -89,7 +62,7 @@
     </div>
   </section>
 
-  <!-- KONTEN TAB: CHAT -->
+  <!-- KONTEN TAB: CHAT (DIPERBAIKI) -->
   <section id="tab-chat" class="tab-content">
     <div class="chat-container">
       <div class="chat-header">
@@ -97,8 +70,16 @@
         <span class="status">● Online</span>
       </div>
       <div class="chat-messages" id="chat-messages">
-        <div class="message bot">Halo Bunda! 👋 Ketik <b>cek</b>, <b>kuis</b>, <b>menu</b>, atau tanya apa saja! 💐</div>
+        <div class="message bot">Halo Bunda! 👋 Silakan ketik pertanyaan atau pilih tombol cepat di bawah ini. 💐</div>
       </div>
+      
+      <!-- TOMBOL CEPAT (QUICK REPLIES) -->
+      <div class="quick-replies" id="quick-replies">
+        <button class="quick-btn" data-msg="cek">🛑 Cek Pesan</button>
+        <button class="quick-btn" data-msg="menu">📋 Menu</button>
+        <button class="quick-btn" data-msg="kuis">🎮 Mulai Kuis</button>
+      </div>
+
       <div class="chat-input-area">
         <input type="text" id="chat-input" placeholder="Ketik pesan...">
         <button id="chat-send" class="btn-send">Kirim</button>
@@ -121,7 +102,8 @@
           <span>Soal <span id="kuis-nomor">1</span>/<span id="kuis-total">5</span></span>
           <span>Skor: <b id="kuis-skor">0</b></span>
         </div>
-        <img id="kuis-gambar" style="max-width: 100%; border-radius: 8px; margin: 16px 0; display:block;">
+        <!-- GAMBAR KUIS AKAN DIPOTONG OTOMATIS VIA CSS -->
+        <img id="kuis-gambar">
         <p id="kuis-pertanyaan" style="font-weight: 600;"></p>
         <div class="kuis-buttons">
           <button class="btn-kuis" data-answer="asli">🟢 Asli</button>
@@ -132,7 +114,7 @@
 
       <div id="kuis-finish" style="display:none;">
         <h3 id="finish-badge" style="text-align:center; font-size:1.5rem;"></h3>
-        <p id="finish-skor" style="text-align:center; font-size:1.2rem; color:#667eea; margin-bottom:16px;"></p>
+        <p id="finish-skor" style="text-align:center; font-size:1.2rem; color:#4c5fd5; margin-bottom:16px;"></p>
         <button id="btn-ulang-kuis" class="btn-primary">Ulangi Kuis</button>
       </div>
     </div>
