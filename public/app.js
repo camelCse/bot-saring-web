@@ -9,6 +9,17 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
 
+// === FUNGSI TOAST (PENGGANTI ALERT) ===
+function showToast(message, type = 'error') {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = `toast ${type} show`;
+  
+  setTimeout(() => {
+    toast.className = 'toast'; // Sembunyikan lagi
+  }, 3500); // Hilang setelah 3.5 detik
+}
+
 // === DETEKSI ===
 const uploadArea = document.getElementById('upload-area');
 const fileInput = document.getElementById('file-input');
@@ -42,14 +53,12 @@ function handleFile(file) {
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
   
-  // TAMPILKAN SKELETON
   btnDetect.disabled = true;
   btnDetect.textContent = 'Memproses...';
   skeletonDiv.style.display = 'block';
   hasilDiv.style.display = 'none';
 
-  // JEDA PAKSA 1.5 DETIK AGAR ANIMASI TERLIHAT
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 1500)); // Jeda Skeleton
 
   const formData = new FormData();
   formData.append('image', selectedFile);
@@ -59,7 +68,6 @@ btnDetect.addEventListener('click', async () => {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     
-    // SEMBUNYIKAN SKELETON, TAMPILKAN HASIL
     skeletonDiv.style.display = 'none';
     hasilDiv.style.display = 'block';
     
@@ -69,10 +77,10 @@ btnDetect.addEventListener('click', async () => {
     document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
   } catch (err) {
     skeletonDiv.style.display = 'none';
-    alert('Gagal: ' + err.message);
+    showToast('Gagal: ' + err.message, 'error'); // Pakai Toast
   } finally {
     btnDetect.disabled = false;
-    btnDetect.textContent = 'Analisis Gambar';
+    btnDetect.textContent = '🔍 Analisis Gambar';
   }
 });
 
@@ -96,15 +104,13 @@ async function sendChat() {
   chatInput.value = '';
   addMessage(text, 'user');
   
-  // TAMPILKAN SKELETON CHAT
   const loadingDiv = document.createElement('div');
   loadingDiv.className = 'message bot';
   loadingDiv.innerHTML = '<div class="skeleton-box sk-chat-bubble"></div>';
   chatMessages.appendChild(loadingDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
-  // JEDA PAKSA 1.5 DETIK AGAR ANIMASI TERLIHAT
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 1500)); // Jeda Skeleton
 
   try {
     const res = await fetch('/api/chat', {
@@ -113,7 +119,7 @@ async function sendChat() {
       body: JSON.stringify({ message: text, sessionId })
     });
     const data = await res.json();
-    loadingDiv.remove(); // Hapus skeleton
+    loadingDiv.remove();
     
     if (data.reply === '__START_QUIZ__') {
       addMessage('Oke Bunda! Buka tab <b>🎮 Kuis</b> untuk mulai main 💐', 'bot');
@@ -123,7 +129,7 @@ async function sendChat() {
     }
   } catch {
     loadingDiv.remove();
-    addMessage('Maaf Bun, ada error. Coba lagi 🙏', 'bot');
+    showToast('Maaf Bun, ada error jaringan. Coba lagi 🙏', 'error');
   }
 }
 
@@ -175,19 +181,19 @@ btnStartKuis.addEventListener('click', async () => {
   btnStartKuis.disabled = true;
   btnStartKuis.textContent = 'Memuat Soal...';
   
-  await new Promise(r => setTimeout(r, 1000)); // Jeda 1 detik untuk kuis
+  await new Promise(r => setTimeout(r, 1000));
   
   const data = await kuisAction('start');
   renderQuestion(data);
   
   btnStartKuis.disabled = false;
-  btnStartKuis.textContent = 'Mulai Kuis';
+  btnStartKuis.textContent = '🎮 Mulai Kuis';
 });
 
 document.querySelectorAll('.btn-kuis').forEach(btn => {
   btn.addEventListener('click', async () => {
     const data = await kuisAction('answer', btn.dataset.answer);
-    if (data.error) { alert(data.error); return; }
+    if (data.error) { showToast(data.error, 'error'); return; }
     showFeedback(data.feedback);
     setTimeout(() => {
       if (data.action === 'finished') {

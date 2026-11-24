@@ -9,6 +9,9 @@
 </head>
 <body>
 
+  <!-- TOAST NOTIFICATION (Pengganti Alert) -->
+  <div id="toast" class="toast"></div>
+
   <!-- HEADER -->
   <header>
     <div class="header-inner">
@@ -46,7 +49,8 @@
       
       <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px;">
       
-      <button id="btn-detect" class="btn-primary" disabled>Analisis Gambar</button>
+      <!-- TOMBOL DENGAN IKON -->
+      <button id="btn-detect" class="btn-primary" disabled>🔍 Analisis Gambar</button>
       <p id="btn-helper-text" style="text-align:center; font-size:0.8rem; color:#666; margin-top:8px;">Pilih foto dulu ya Bun</p>
 
       <!-- SKELETON LOADING DETEKSI -->
@@ -89,7 +93,7 @@
 
       <div class="chat-input-area">
         <input type="text" id="chat-input" placeholder="Ketik pesan...">
-        <button id="chat-send" class="btn-send">Kirim</button>
+        <button id="chat-send" class="btn-send">Kirim ➤</button>
       </div>
     </div>
   </section>
@@ -101,7 +105,7 @@
       <p>Uji kemampuan Bunda mendeteksi gambar AI!</p>
       
       <div id="kuis-start-area">
-        <button id="btn-start-kuis" class="btn-primary">Mulai Kuis</button>
+        <button id="btn-start-kuis" class="btn-primary">🎮 Mulai Kuis</button>
       </div>
 
       <div id="kuis-area" style="display:none;">
@@ -121,7 +125,7 @@
       <div id="kuis-finish" style="display:none;">
         <h3 id="finish-badge" style="text-align:center; font-size:1.5rem; margin-bottom:8px;"></h3>
         <p id="finish-skor" style="text-align:center; font-size:1.2rem; color:#4c5fd5; margin-bottom:16px;"></p>
-        <button id="btn-ulang-kuis" class="btn-primary">Ulangi Kuis</button>
+        <button id="btn-ulang-kuis" class="btn-primary">🔄 Ulangi Kuis</button>
       </div>
     </div>
   </section>
