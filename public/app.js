@@ -16,6 +16,7 @@ const preview = document.getElementById('preview');
 const btnDetect = document.getElementById('btn-detect');
 const btnHelperText = document.getElementById('btn-helper-text');
 const hasilDiv = document.getElementById('deteksi-hasil');
+const skeletonDiv = document.getElementById('deteksi-skeleton');
 let selectedFile = null;
 
 uploadArea.addEventListener('click', () => fileInput.click());
@@ -33,20 +34,22 @@ function handleFile(file) {
   preview.src = URL.createObjectURL(file);
   preview.style.display = 'block';
   btnDetect.disabled = false;
-  btnHelperText.style.display = 'none'; // Sembunyikan teks bantuan
+  btnHelperText.style.display = 'none';
   hasilDiv.style.display = 'none';
+  skeletonDiv.style.display = 'none';
 }
 
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
   
-  // --- MULAI SKELETON ---
+  // TAMPILKAN SKELETON
   btnDetect.disabled = true;
-  btnDetect.textContent = 'Menganalisis...';
-  const skeleton = document.getElementById('deteksi-skeleton');
-  skeleton.style.display = 'block'; // Tampilkan skeleton
-  hasilDiv.style.display = 'none';  // Sembunyikan hasil lama
-  // ----------------------
+  btnDetect.textContent = 'Memproses...';
+  skeletonDiv.style.display = 'block';
+  hasilDiv.style.display = 'none';
+
+  // JEDA PAKSA 1.5 DETIK AGAR ANIMASI TERLIHAT
+  await new Promise(r => setTimeout(r, 1500));
 
   const formData = new FormData();
   formData.append('image', selectedFile);
@@ -56,17 +59,16 @@ btnDetect.addEventListener('click', async () => {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     
-    // --- MATIKAN SKELETON, TAMPILKAN HASIL ---
-    skeleton.style.display = 'none';
+    // SEMBUNYIKAN SKELETON, TAMPILKAN HASIL
+    skeletonDiv.style.display = 'none';
     hasilDiv.style.display = 'block';
-    // -----------------------------------------
     
     document.getElementById('skor-angka').textContent = data.persen_ai + '%';
     document.getElementById('progress-fill').style.width = data.persen_ai + '%';
     document.getElementById('penjelasan').textContent = data.penjelasan;
     document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
   } catch (err) {
-    skeleton.style.display = 'none'; // Pastikan skeleton hilang jika error
+    skeletonDiv.style.display = 'none';
     alert('Gagal: ' + err.message);
   } finally {
     btnDetect.disabled = false;
@@ -94,13 +96,15 @@ async function sendChat() {
   chatInput.value = '';
   addMessage(text, 'user');
   
-  // --- MULAI SKELETON CHAT ---
+  // TAMPILKAN SKELETON CHAT
   const loadingDiv = document.createElement('div');
   loadingDiv.className = 'message bot';
   loadingDiv.innerHTML = '<div class="skeleton-box sk-chat-bubble"></div>';
   chatMessages.appendChild(loadingDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
-  // ---------------------------
+
+  // JEDA PAKSA 1.5 DETIK AGAR ANIMASI TERLIHAT
+  await new Promise(r => setTimeout(r, 1500));
 
   try {
     const res = await fetch('/api/chat', {
@@ -118,7 +122,7 @@ async function sendChat() {
       addMessage(data.reply, 'bot');
     }
   } catch {
-    loadingDiv.remove(); // Hapus skeleton jika error
+    loadingDiv.remove();
     addMessage('Maaf Bun, ada error. Coba lagi 🙏', 'bot');
   }
 }
@@ -126,7 +130,7 @@ async function sendChat() {
 chatSend.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
-// LOGIKA QUICK REPLIES (Tinggal klik tombol, langsung terkirim)
+// QUICK REPLIES
 document.querySelectorAll('.quick-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     chatInput.value = btn.dataset.msg;
@@ -168,18 +172,16 @@ function showFeedback(feedback) {
 }
 
 btnStartKuis.addEventListener('click', async () => {
-  // --- MULAI ANIMASI LOADING TOMBOL KUIS ---
   btnStartKuis.disabled = true;
-  btnStartKuis.innerHTML = '<span class="spinner" style="border-top-color: #4c5fd5; border-color: rgba(76, 95, 213, 0.3); border-top-color: #4c5fd5;"></span> Memuat Soal...';
-  // -----------------------------------------
-
+  btnStartKuis.textContent = 'Memuat Soal...';
+  
+  await new Promise(r => setTimeout(r, 1000)); // Jeda 1 detik untuk kuis
+  
   const data = await kuisAction('start');
   renderQuestion(data);
   
-  // --- MATIKAN ANIMASI LOADING ---
   btnStartKuis.disabled = false;
   btnStartKuis.textContent = 'Mulai Kuis';
-  // -------------------------------
 });
 
 document.querySelectorAll('.btn-kuis').forEach(btn => {

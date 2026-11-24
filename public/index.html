@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bot S.A.R.I.N.G. — Teman Digital PKK</title>
-  <!-- GANTI dengan nama file logo kalian -->
   <link rel="icon" type="image/svg+xml" href="/img/logo.svg"> 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -14,7 +13,6 @@
   <header>
     <div class="header-inner">
       <div class="logo">
-        <!-- GANTI dengan logo kalian jika ada -->
         <div class="logo-icon">🛡️</div>
         <div class="logo-text">
           <h1>Bot S.A.R.I.N.G.</h1>
@@ -24,14 +22,14 @@
     </div>
   </header>
 
-  <!-- NAVIGASI TAB (DIPERBAIKI) -->
+  <!-- NAVIGASI TAB -->
   <nav class="tabs">
     <button class="tab active" data-tab="deteksi">🔍 Deteksi AI</button>
     <button class="tab" data-tab="chat">💬 Chat</button>
     <button class="tab" data-tab="kuis">🎮 Kuis</button>
   </nav>
 
-  <!-- KONTEN TAB: DETEKSI (HERO DIPINDAH KE SINI) -->
+  <!-- KONTEN TAB: DETEKSI -->
   <section id="tab-deteksi" class="tab-content active">
     <div class="hero-compact">
       <p><strong>Cara Pakai:</strong> Upload gambar ➔ Cek hasil ➔ Jadi lebih waspada.</p>
@@ -40,16 +38,26 @@
     <div class="card">
       <h2>Deteksi Gambar AI</h2>
       <p>Upload gambar yang Bunda curigai. Sistem akan memberi skor dan penjelasan.</p>
+      
       <div class="upload-area" id="upload-area">
         <input type="file" id="file-input" accept="image/*" hidden>
         <p>📷 Ketuk untuk pilih foto</p>
       </div>
+      
       <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px;">
       
-      <!-- TOMBOL DIPERBAIKI: Tambah teks bantuan kecil -->
       <button id="btn-detect" class="btn-primary" disabled>Analisis Gambar</button>
       <p id="btn-helper-text" style="text-align:center; font-size:0.8rem; color:#666; margin-top:8px;">Pilih foto dulu ya Bun</p>
 
+      <!-- SKELETON LOADING DETEKSI -->
+      <div id="deteksi-skeleton" class="hasil" style="display:none;">
+        <div class="sk-title skeleton-box"></div>
+        <div class="sk-bar skeleton-box"></div>
+        <div class="sk-line skeleton-box"></div>
+        <div class="sk-line short skeleton-box"></div>
+      </div>
+
+      <!-- HASIL DETEKSI -->
       <div id="deteksi-hasil" class="hasil" style="display:none;">
         <div class="skor-container">
           <span class="skor-label">Skor AI Detection</span>
@@ -62,7 +70,7 @@
     </div>
   </section>
 
-  <!-- KONTEN TAB: CHAT (DIPERBAIKI) -->
+  <!-- KONTEN TAB: CHAT -->
   <section id="tab-chat" class="tab-content">
     <div class="chat-container">
       <div class="chat-header">
@@ -73,7 +81,6 @@
         <div class="message bot">Halo Bunda! 👋 Silakan ketik pertanyaan atau pilih tombol cepat di bawah ini. 💐</div>
       </div>
       
-      <!-- TOMBOL CEPAT (QUICK REPLIES) -->
       <div class="quick-replies" id="quick-replies">
         <button class="quick-btn" data-msg="cek">🛑 Cek Pesan</button>
         <button class="quick-btn" data-msg="menu">📋 Menu</button>
@@ -102,7 +109,6 @@
           <span>Soal <span id="kuis-nomor">1</span>/<span id="kuis-total">5</span></span>
           <span>Skor: <b id="kuis-skor">0</b></span>
         </div>
-        <!-- GAMBAR KUIS AKAN DIPOTONG OTOMATIS VIA CSS -->
         <img id="kuis-gambar">
         <p id="kuis-pertanyaan" style="font-weight: 600;"></p>
         <div class="kuis-buttons">
@@ -113,7 +119,7 @@
       </div>
 
       <div id="kuis-finish" style="display:none;">
-        <h3 id="finish-badge" style="text-align:center; font-size:1.5rem;"></h3>
+        <h3 id="finish-badge" style="text-align:center; font-size:1.5rem; margin-bottom:8px;"></h3>
         <p id="finish-skor" style="text-align:center; font-size:1.2rem; color:#4c5fd5; margin-bottom:16px;"></p>
         <button id="btn-ulang-kuis" class="btn-primary">Ulangi Kuis</button>
       </div>
