@@ -98,6 +98,7 @@ async function sendChat() {
   chatInput.value = '';
   addMessage(text, 'user');
   const loading = addMessage('⏳ Sedang mengetik...', 'bot');
+  
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -106,15 +107,19 @@ async function sendChat() {
     });
     const data = await res.json();
     loading.remove();
+    
     if (data.reply === '__START_QUIZ__') {
       addMessage('Oke Bunda! Buka tab <b>🎮 Kuis</b> untuk mulai main 💐', 'bot');
       document.querySelector('[data-tab="kuis"]').click();
+    } else if (!data.reply || data.reply.trim() === '') {
+      // PENGAMAN: Jika bot membalas kosong
+      addMessage('Maaf Bun, saya belum bisa menjawab pertanyaan itu. Bisa coba tanya dengan kalimat lain? 💐', 'bot');
     } else {
       addMessage(data.reply, 'bot');
     }
   } catch {
     loading.remove();
-    addMessage('Maaf Bun, ada error. Coba lagi 🙏', 'bot');
+    addMessage('Maaf Bun, koneksi sedang sibuk. Coba tanya lagi sebentar ya 🙏', 'bot');
   }
 }
 

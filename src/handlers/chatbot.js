@@ -3,9 +3,8 @@ const { TEMPLATES } = require('../templates/messages');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Model yang TERBUKTI ada di akun kalian
 const CHAT_MODELS = [
-  'openai/gpt-oss-120b',
+  'llama-3.1-8b-instant',
   'openai/gpt-oss-20b',
   'qwen/qwen3.8-27b'
 ];
@@ -60,10 +59,18 @@ async function callGroq(hist) {
           ...hist
         ],
         temperature: 0.75,
-        max_tokens: 300
-      });
+        max_tokens: 250
+      }, { timeout: 8000 });
+      
+      const answerText = completion.choices[0].message.content;
+      
+      // PENGAMAN: Jika AI mengembalikan teks kosong
+      if (!answerText || answerText.trim() === '') {
+        throw new Error('AI mengembalikan teks kosong');
+      }
+      
       console.log(`[Chat] ✅ Model ${model} berhasil`);
-      return completion.choices[0].message.content.trim();
+      return answerText.trim();
     } catch (err) {
       console.warn(`[Chat] ❌ Model ${model} gagal: ${err.message}`);
       lastError = err;
