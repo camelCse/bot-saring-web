@@ -45,6 +45,10 @@ btnDetect.addEventListener('click', async () => {
   btnDetect.innerHTML = '<span class="spinner"></span> Sedang Menganalisis...';
   // --------------------------------------------
 
+  // TAMBAHKAN BARIS INI UNTUK TES:
+  await new Promise(r => setTimeout(r, 3000)); 
+  // --------------------------------------------
+
   const formData = new FormData();
   formData.append('image', selectedFile);
   
