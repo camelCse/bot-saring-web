@@ -87,14 +87,15 @@ header { padding: 16px; background: linear-gradient(135deg, #4c5fd5, #5a3d8a); c
 
 /* MEMOTONG WATERMARK GAMBAR KUIS */
 #kuis-gambar { 
+  #kuis-gambar { 
   width: 100%; 
-  max-height: 300px; 
-  object-fit: cover; 
-  object-position: top center; /* Fokus ke atas agar watermark di bawah terpotong */
+  height: auto; /* Biarkan gambar menyesuaikan tingginya secara natural */
   border-radius: 8px; 
   margin: 16px 0; 
   display: block; 
-  background: #f0f0f0;
+  /* Trik memotong tepat 8% di bagian bawah (menghilangkan watermark) */
+  clip-path: inset(0 0 8% 0); 
+}
 }
 
 .kuis-buttons { display: flex; gap: 12px; margin: 20px 0; }

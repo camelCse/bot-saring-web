@@ -33,20 +33,26 @@ function handleFile(file) {
   preview.src = URL.createObjectURL(file);
   preview.style.display = 'block';
   btnDetect.disabled = false;
-  btnHelperText.style.display = 'none'; // Sembunyikan teks "Pilih foto dulu"
+  btnHelperText.style.display = 'none'; // Sembunyikan teks bantuan
   hasilDiv.style.display = 'none';
 }
 
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
+  
+  // --- MULAI ANIMASI LOADING TOMBOL DETEKSI ---
   btnDetect.disabled = true;
-  btnDetect.textContent = 'Menganalisis...';
+  btnDetect.innerHTML = '<span class="spinner"></span> Sedang Menganalisis...';
+  // --------------------------------------------
+
   const formData = new FormData();
   formData.append('image', selectedFile);
+  
   try {
     const res = await fetch('/api/detect', { method: 'POST', body: formData });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+    
     hasilDiv.style.display = 'block';
     document.getElementById('skor-angka').textContent = data.persen_ai + '%';
     document.getElementById('progress-fill').style.width = data.persen_ai + '%';
@@ -55,8 +61,10 @@ btnDetect.addEventListener('click', async () => {
   } catch (err) {
     alert('Gagal: ' + err.message);
   } finally {
+    // --- MATIKAN ANIMASI LOADING ---
     btnDetect.disabled = false;
     btnDetect.textContent = 'Analisis Gambar';
+    // -------------------------------
   }
 });
 
@@ -103,7 +111,7 @@ async function sendChat() {
 chatSend.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
-// LOGIKA QUICK REPLIES
+// LOGIKA QUICK REPLIES (Tinggal klik tombol, langsung terkirim)
 document.querySelectorAll('.quick-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     chatInput.value = btn.dataset.msg;
@@ -145,9 +153,18 @@ function showFeedback(feedback) {
 }
 
 btnStartKuis.addEventListener('click', async () => {
-  kuisStartArea.style.display = 'none';
+  // --- MULAI ANIMASI LOADING TOMBOL KUIS ---
+  btnStartKuis.disabled = true;
+  btnStartKuis.innerHTML = '<span class="spinner" style="border-top-color: #4c5fd5; border-color: rgba(76, 95, 213, 0.3); border-top-color: #4c5fd5;"></span> Memuat Soal...';
+  // -----------------------------------------
+
   const data = await kuisAction('start');
   renderQuestion(data);
+  
+  // --- MATIKAN ANIMASI LOADING ---
+  btnStartKuis.disabled = false;
+  btnStartKuis.textContent = 'Mulai Kuis';
+  // -------------------------------
 });
 
 document.querySelectorAll('.btn-kuis').forEach(btn => {
