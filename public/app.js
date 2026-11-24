@@ -47,7 +47,9 @@ btnDetect.addEventListener('click', async () => {
   formData.append('image', selectedFile);
   
   try {
-    const res = await fetch('/api/detect', { method: 'POST', body: formData });
+    const fetchPromise = fetch('/api/detect', { method: 'POST', body: formData });
+const delayPromise = new Promise(resolve => setTimeout(resolve, 1500)); // Tunda 1.5 detik
+const [res] = await Promise.all([fetchPromise, delayPromise]);
     
     if (!res.ok) {
       throw new Error(`Server Error (${res.status}). Pastikan gambar di bawah 4MB.`);
