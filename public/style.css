@@ -157,3 +157,20 @@ footer { text-align: center; padding: 32px 16px; margin-top: 40px; color: #555; 
 footer strong { color: #4c5fd5; }
 .footer-sub { font-size: 0.8rem; color: #666; margin-top: 6px; }
 .footer-copy { font-size: 0.8rem; color: #666; margin-top: 12px; }
+
+/* TOMBOL SEKUNDER (COBA FOTO LAIN) */
+.btn-secondary {
+  display: block; width: 100%; padding: 12px;
+  background: white; color: #4c5fd5; border: 2px solid #4c5fd5; 
+  border-radius: 8px; font-size: 1rem; font-weight: 600; 
+  cursor: pointer; transition: 0.2s;
+}
+.btn-secondary:hover { background: #e0e7ff; }
+
+/* MEMPERLEBAR JARAK TOMBOL KUIS (ANTI SALAH PENCET) */
+.kuis-buttons {
+  gap: 20px !important; /* Jarak antar tombol Asli dan AI diperlebar */
+}
+.btn-kuis {
+  padding: 20px 16px !important; /* Tombol dibuat lebih tebal ke bawah */
+}

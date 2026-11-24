@@ -9,15 +9,11 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
 
-// === FUNGSI TOAST (PENGGANTI ALERT) ===
 function showToast(message, type = 'error') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
   toast.className = `toast ${type} show`;
-  
-  setTimeout(() => {
-    toast.className = 'toast'; // Sembunyikan lagi
-  }, 3500); // Hilang setelah 3.5 detik
+  setTimeout(() => { toast.className = 'toast'; }, 3500); 
 }
 
 // === DETEKSI ===
@@ -28,6 +24,8 @@ const btnDetect = document.getElementById('btn-detect');
 const btnHelperText = document.getElementById('btn-helper-text');
 const hasilDiv = document.getElementById('deteksi-hasil');
 const skeletonDiv = document.getElementById('deteksi-skeleton');
+const btnReset = document.getElementById('btn-reset-deteksi');
+const deteksiSubtitle = document.getElementById('deteksi-subtitle');
 let selectedFile = null;
 
 uploadArea.addEventListener('click', () => fileInput.click());
@@ -50,6 +48,17 @@ function handleFile(file) {
   skeletonDiv.style.display = 'none';
 }
 
+// LOGIKA TOMBOL COBA FOTO LAIN
+btnReset.addEventListener('click', () => {
+  selectedFile = null;
+  fileInput.value = '';
+  preview.style.display = 'none';
+  hasilDiv.style.display = 'none';
+  btnDetect.disabled = true;
+  btnHelperText.style.display = 'block';
+  deteksiSubtitle.textContent = "Upload gambar yang Bunda curigai. Sistem akan memberi skor dan penjelasan.";
+});
+
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
   
@@ -58,7 +67,7 @@ btnDetect.addEventListener('click', async () => {
   skeletonDiv.style.display = 'block';
   hasilDiv.style.display = 'none';
 
-  await new Promise(r => setTimeout(r, 1500)); // Jeda Skeleton
+  await new Promise(r => setTimeout(r, 1500));
 
   const formData = new FormData();
   formData.append('image', selectedFile);
@@ -75,16 +84,33 @@ btnDetect.addEventListener('click', async () => {
     document.getElementById('progress-fill').style.width = data.persen_ai + '%';
     document.getElementById('penjelasan').textContent = data.penjelasan;
     document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
+
+    // --- LOGIKA EMPATI (COPYWRITING) ---
+    const skorLabel = document.getElementById('skor-label-teks');
+    if (data.persen_ai > 65) {
+      skorLabel.textContent = "Indikasi Buatan AI";
+      skorLabel.style.color = "#e53e3e";
+      deteksiSubtitle.textContent = "Gambar ini perlu diverifikasi ulang. Jangan disebar dulu ya Bun.";
+    } else if (data.persen_ai > 40) {
+      skorLabel.textContent = "Hasil Meragukan";
+      skorLabel.style.color = "#d69e2e";
+      deteksiSubtitle.textContent = "Belum bisa dipastikan. Coba cek sumber aslinya dulu ya.";
+    } else {
+      skorLabel.textContent = "Kemungkinan Asli";
+      skorLabel.style.color = "#38a169";
+      deteksiSubtitle.textContent = "Sepertinya ini foto asli, tapi tetap waspada ya Bun.";
+    }
+
   } catch (err) {
     skeletonDiv.style.display = 'none';
-    showToast('Gagal: ' + err.message, 'error'); // Pakai Toast
+    showToast('Gagal: ' + err.message, 'error');
   } finally {
     btnDetect.disabled = false;
     btnDetect.textContent = '🔍 Analisis Gambar';
   }
 });
 
-// === CHAT ===
+// === CHAT === (SAMA SEPERTI SEBELUMNYA)
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
@@ -110,7 +136,7 @@ async function sendChat() {
   chatMessages.appendChild(loadingDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
-  await new Promise(r => setTimeout(r, 1500)); // Jeda Skeleton
+  await new Promise(r => setTimeout(r, 1500));
 
   try {
     const res = await fetch('/api/chat', {
@@ -136,15 +162,11 @@ async function sendChat() {
 chatSend.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendChat(); });
 
-// QUICK REPLIES
 document.querySelectorAll('.quick-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    chatInput.value = btn.dataset.msg;
-    sendChat();
-  });
+  btn.addEventListener('click', () => { chatInput.value = btn.dataset.msg; sendChat(); });
 });
 
-// === KUIS ===
+// === KUIS === (SAMA SEPERTI SEBELUMNYA)
 const btnStartKuis = document.getElementById('btn-start-kuis');
 const kuisStartArea = document.getElementById('kuis-start-area');
 const kuisArea = document.getElementById('kuis-area');
@@ -180,12 +202,9 @@ function showFeedback(feedback) {
 btnStartKuis.addEventListener('click', async () => {
   btnStartKuis.disabled = true;
   btnStartKuis.textContent = 'Memuat Soal...';
-  
   await new Promise(r => setTimeout(r, 1000));
-  
   const data = await kuisAction('start');
   renderQuestion(data);
-  
   btnStartKuis.disabled = false;
   btnStartKuis.textContent = '🎮 Mulai Kuis';
 });

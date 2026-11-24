@@ -2,14 +2,15 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Bot S.A.R.I.N.G. — Teman Digital PKK</title>
   <link rel="icon" type="image/svg+xml" href="/img/logo.svg"> 
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4c5fd5">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- TOAST NOTIFICATION (Pengganti Alert) -->
   <div id="toast" class="toast"></div>
 
   <!-- HEADER -->
@@ -40,16 +41,15 @@
 
     <div class="card">
       <h2>Deteksi Gambar AI</h2>
-      <p>Upload gambar yang Bunda curigai. Sistem akan memberi skor dan penjelasan.</p>
+      <p id="deteksi-subtitle">Upload gambar yang Bunda curigai. Sistem akan memberi skor dan penjelasan.</p>
       
       <div class="upload-area" id="upload-area">
         <input type="file" id="file-input" accept="image/*" hidden>
         <p>📷 Ketuk untuk pilih foto</p>
       </div>
       
-      <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px;">
+      <img id="preview" style="display:none; max-width: 100%; border-radius: 8px; margin-top: 16px; border: 2px solid #e2e8f0;">
       
-      <!-- TOMBOL DENGAN IKON -->
       <button id="btn-detect" class="btn-primary" disabled>🔍 Analisis Gambar</button>
       <p id="btn-helper-text" style="text-align:center; font-size:0.8rem; color:#666; margin-top:8px;">Pilih foto dulu ya Bun</p>
 
@@ -61,15 +61,18 @@
         <div class="sk-line short skeleton-box"></div>
       </div>
 
-      <!-- HASIL DETEKSI -->
+      <!-- HASIL DETEKSI (LEBIH EMPATIK) -->
       <div id="deteksi-hasil" class="hasil" style="display:none;">
         <div class="skor-container">
-          <span class="skor-label">Skor AI Detection</span>
+          <span class="skor-label" id="skor-label-teks">Indikasi AI</span>
           <span class="skor-angka" id="skor-angka">0%</span>
         </div>
         <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
         <p class="penjelasan" id="penjelasan"></p>
         <p class="metode" id="metode"></p>
+        
+        <!-- TOMBOL COBA LAGI -->
+        <button id="btn-reset-deteksi" class="btn-secondary" style="margin-top: 16px;">🔄 Coba Foto Lain</button>
       </div>
     </div>
   </section>

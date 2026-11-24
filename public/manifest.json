@@ -1,0 +1,16 @@
+{
+  "name": "Bot S.A.R.I.N.G. PKK",
+  "short_name": "Bot S.A.R.I.N.G.",
+  "description": "Teman digital cerdas untuk Ibu-ibu PKK",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4c5fd5",
+  "icons": [
+    {
+      "src": "/img/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
