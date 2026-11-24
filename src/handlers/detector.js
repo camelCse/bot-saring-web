@@ -2,6 +2,7 @@ const fs = require('fs');
 const Groq = require('groq-sdk');
 const exifr = require('exifr');
 const sharp = require('sharp');
+const axios = require('axios');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const HF_API = 'https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector';
@@ -10,27 +11,22 @@ const TEXT_MODEL = 'openai/gpt-oss-120b';
 // 1. Coba HuggingFace (Maksimal 5 detik agar tidak timeout Vercel)
 async function tryHF(imagePath) {
   if (!process.env.HF_TOKEN) {
-    console.log('[HF] GAGAL: HF_TOKEN tidak ada di Environment Vercel');
+    console.log('[HF] GAGAL: HF_TOKEN tidak ada');
     return null;
   }
   try {
     const imageBuffer = fs.readFileSync(imagePath);
-    const response = await fetch(HF_API, {
-      method: 'POST',
+    
+    // Gunakan axios yang lebih stabil di Vercel
+    const response = await axios.post(HF_API, imageBuffer, {
       headers: {
         'Authorization': `Bearer ${process.env.HF_TOKEN}`,
         'Content-Type': 'application/octet-stream'
       },
-      body: imageBuffer,
-      signal: AbortSignal.timeout(6000) // Naikkan ke 6 detik
+      timeout: 9000 // Naikkan batas waktu ke 9 detik (maksimal Vercel 10 detik)
     });
 
-    if (!response.ok) {
-      console.log('[HF] GAGAL: HTTP Status', response.status);
-      return null;
-    }
-
-    const data = await response.json();
+    const data = response.data;
     if (Array.isArray(data)) {
       const artificial = data.find(d => d.label === 'artificial' || d.label === 'fake');
       if (artificial) return { persen: Math.round(artificial.score * 100), sumber: 'HuggingFace AI' };
@@ -38,7 +34,7 @@ async function tryHF(imagePath) {
     console.log('[HF] GAGAL: Format response tidak dikenali', data);
     return null;
   } catch (err) {
-    console.log('[HF] GAGAL: Error jaringan / timeout', err.message);
+    console.log('[HF] GAGAL:', err.message);
     return null;
   }
 }
