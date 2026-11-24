@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 // Validasi ukuran & tipe file
 const upload = multer({
-  dest: 'uploads/',
+  dest: '/tmp/',
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
