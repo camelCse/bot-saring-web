@@ -37,24 +37,42 @@ function handleFile(file) {
 
 btnDetect.addEventListener('click', async () => {
   if (!selectedFile) return;
-  btnDetect.disabled = true;
-  btnDetect.textContent = 'Menganalisis...';
+  
+  // Tampilkan Loading, Sembunyikan Hasil & Tombol
+  btnDetect.style.display = 'none';
+  hasilDiv.style.display = 'none';
+  document.getElementById('loading-deteksi').style.display = 'block';
+
   const formData = new FormData();
   formData.append('image', selectedFile);
+  
   try {
     const res = await fetch('/api/detect', { method: 'POST', body: formData });
     const data = await res.json();
+    
     if (data.error) throw new Error(data.error);
+    
+    // Sembunyikan Loading, Tampilkan Hasil
+    document.getElementById('loading-deteksi').style.display = 'none';
+    btnDetect.style.display = 'block';
     hasilDiv.style.display = 'block';
+    
+    // Update Tampilan
     document.getElementById('skor-angka').textContent = data.persen_ai + '%';
     document.getElementById('progress-fill').style.width = data.persen_ai + '%';
-    document.getElementById('penjelasan').textContent = data.penjelasan;
-    document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'groq');
+    
+    // Pastikan penjelasan SELALU ada
+    const penjelasanTeks = data.penjelasan || "Bunda, gambar ini telah dianalisis. Harap tetap waspada terhadap konten yang mencurigakan.";
+    document.getElementById('penjelasan').textContent = penjelasanTeks;
+    
+    document.getElementById('metode').textContent = 'Metode: ' + (data.metode || 'Sistem Analisis');
+
   } catch (err) {
-    alert('Gagal: ' + err.message);
-  } finally {
+    document.getElementById('loading-deteksi').style.display = 'none';
+    btnDetect.style.display = 'block';
     btnDetect.disabled = false;
     btnDetect.textContent = 'Analisis Gambar';
+    alert('Gagal: ' + err.message);
   }
 });
 

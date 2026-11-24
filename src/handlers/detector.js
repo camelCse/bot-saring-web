@@ -7,12 +7,11 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const HF_API = 'https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector';
 const TEXT_MODEL = 'openai/gpt-oss-120b';
 
-// === OPSI 1: Coba HuggingFace ===
+// 1. Coba HuggingFace (Maksimal 5 detik agar tidak timeout Vercel)
 async function tryHF(imagePath) {
   if (!process.env.HF_TOKEN) return null;
   try {
     const imageBuffer = fs.readFileSync(imagePath);
-    console.log('[Detector] Coba HF...');
     const response = await fetch(HF_API, {
       method: 'POST',
       headers: {
@@ -20,131 +19,85 @@ async function tryHF(imagePath) {
         'Content-Type': 'application/octet-stream'
       },
       body: imageBuffer,
-      signal: AbortSignal.timeout(8000) // timeout 8 detik
+      signal: AbortSignal.timeout(5000) // 5 detik
     });
-    if (!response.ok) {
-      console.warn('[Detector] HF status:', response.status);
-      return null;
-    }
+    if (!response.ok) return null;
     const data = await response.json();
     if (Array.isArray(data)) {
       const artificial = data.find(d => d.label === 'artificial' || d.label === 'fake');
-      if (artificial) return { persen: Math.round(artificial.score * 100), sumber: 'huggingface' };
+      if (artificial) return { persen: Math.round(artificial.score * 100), sumber: 'HuggingFace AI' };
     }
     return null;
   } catch (err) {
-    console.warn('[Detector] HF gagal:', err.message);
     return null;
   }
 }
 
-// === OPSI 2: Analisis EXIF + Statistik (offline) ===
+// 2. Analisis Offline (Fallback)
 async function analyzeOffline(imagePath) {
   const buffer = fs.readFileSync(imagePath);
-  let persen = 50; // default netral
+  let persen = 50; 
   const ciri = [];
 
-  // 1. Cek EXIF metadata
   try {
-    const exif = await exifr.parse(buffer, ['Make', 'Model', 'ISO', 'FNumber', 'ExposureTime', 'LensModel']);
-    console.log('[Detector] EXIF:', exif);
-
+    const exif = await exifr.parse(buffer, ['Make', 'Model', 'ISO']);
     if (!exif || Object.keys(exif).length === 0) {
-      persen += 25;
-      ciri.push('tidak ada metadata kamera (gambar AI biasanya tidak punya)');
+      persen += 20;
+      ciri.push('tidak ada metadata kamera');
     } else {
-      // Foto asli biasanya punya Make/Model kamera
-      if (exif.Make || exif.Model) {
-        persen -= 20;
-        ciri.push(`ada info kamera (${exif.Make || exif.Model})`);
-      }
-      if (exif.ISO) {
-        persen -= 10;
-        ciri.push(`settingan kamera ISO ${exif.ISO}`);
-      }
+      if (exif.Make || exif.Model) persen -= 20;
     }
-  } catch (err) {
-    console.warn('[Detector] EXIF error:', err.message);
-  }
+  } catch (err) {}
 
-  // 2. Cek resolusi (AI sering resolusi "aneh" seperti 1024x1024 persis)
   try {
     const meta = await sharp(buffer).metadata();
-    console.log('[Detector] Metadata gambar:', { width: meta.width, height: meta.height, format: meta.format });
-
-    if (meta.width === meta.height && (meta.width === 512 || meta.width === 1024 || meta.width === 768)) {
+    if (meta.width === meta.height && (meta.width === 512 || meta.width === 1024)) {
       persen += 15;
-      ciri.push(`resolusi persis ${meta.width}x${meta.height} (khas output AI)`);
+      ciri.push('resolusi persegi khas AI');
     }
-    if (meta.width > 4000 || meta.height > 4000) {
-      persen -= 10;
-      ciri.push('resolusi tinggi (khas foto kamera)');
-    }
-  } catch (err) {
-    console.warn('[Detector] Sharp error:', err.message);
-  }
+  } catch (err) {}
 
-  // 3. Cek kompleksitas (gambar AI kadang "terlalu mulus")
-  try {
-    const stats = await sharp(buffer).greyscale().stats();
-    const stddev = stats.channels[0].stdev;
-    console.log('[Detector] Stdev kecerahan:', stddev);
-    if (stddev < 30) {
-      persen += 10;
-      ciri.push('gambar terlalu halus/seragam');
-    }
-  } catch (err) {
-    console.warn('[Detector] Sharp stats error:', err.message);
-  }
-
-  persen = Math.max(5, Math.min(95, persen));
-  return { persen, sumber: 'analisis offline', ciri };
+  persen = Math.max(10, Math.min(95, persen));
+  return { persen, sumber: 'Analisis Offline (Ciri Visual)', ciri };
 }
 
-// === Penjelasan via Groq (text-only) ===
+// 3. Penjelasan dari Groq (Selalu menghasilkan teks)
 async function explain(persen, ciri, sumber) {
+  const ciriText = ciri.length > 0 ? ciri.join(', ') : 'tidak ada ciri khusus';
   try {
-    const ciriText = ciri.length > 0 ? ciri.join(', ') : 'tidak ada ciri khusus';
     const completion = await groq.chat.completions.create({
       model: TEXT_MODEL,
       messages: [{
         role: 'user',
-        content: `Skor deteksi AI: ${persen}% (metode: ${sumber}). Ciri terdeteksi: ${ciriText}.
-
-Berikan penjelasan SINGKAT (maks 3 kalimat) bahasa Indonesia hangat untuk ibu-ibu PKK. Pakai kata "Bunda". Sebutkan ciri yang terdeteksi. Kalau skor rendah (kemungkinan asli), ingatkan tetap waspada. Jangan pakai istilah teknis.`
+        content: `Sistem mendeteksi gambar ini memiliki skor ${persen}% AI (metode: ${sumber}, ciri: ${ciriText}).
+Berikan penjelasan SINGKAT (maks 3 kalimat) bahasa Indonesia hangat untuk ibu-ibu PKK. Pakai kata "Bunda". Sebutkan alasan berdasarkan skor dan ciri tersebut. Jangan pakai istilah teknis.`
       }],
       max_tokens: 200,
       temperature: 0.7
     });
     return completion.choices[0].message.content.trim();
   } catch (err) {
-    return fallback(persen);
+    if (persen > 70) return `Bunda, gambar ini kemungkinan besar dibuat AI (${persen}%). Ciri: mungkin tekstur terlalu halus atau tidak ada info kamera. Jangan disebar dulu ya 💐`;
+    if (persen > 40) return `Bunda, gambar ini meragukan (${persen}% AI). Sebaiknya dicek ke sumber aslinya dulu sebelum bertindak 💐`;
+    return `Bunda, gambar ini kemungkinan asli (hanya ${persen}% AI). Tapi tetap hati-hati saat menerima pesan berantai ya 💐`;
   }
 }
 
-function fallback(persen) {
-  if (persen > 70) return `Bunda, gambar ini kemungkinan besar dibuat AI (${persen}%). Ciri: mungkin tidak ada info kamera dan tekstur terlalu halus. Jangan disebar dulu ya 💐`;
-  if (persen > 40) return `Bunda, gambar ini meragukan (${persen}% AI). Sebaiknya dicek ke sumber aslinya dulu 💐`;
-  return `Bunda, gambar ini kemungkinan asli (${persen}% AI). Tapi tetap hati-hati ya 💐`;
-}
-
-// === MAIN ===
+// 4. Fungsi Utama
 async function detect(imagePath) {
-  // 1. Coba HF dulu (paling akurat kalau bisa diakses)
-  const hfResult = await tryHF(imagePath);
-  if (hfResult) {
-    const penjelasan = await explain(hfResult.persen, [], 'huggingface');
-    return { persen_ai: hfResult.persen, penjelasan, metode: 'huggingface' };
+  let result = await tryHF(imagePath);
+  
+  if (!result) {
+    console.log('[Detector] Beralih ke analisis offline');
+    result = await analyzeOffline(imagePath);
   }
 
-  // 2. Fallback: analisis offline
-  console.log('[Detector] HF tidak tersedia, pakai analisis offline');
-  const offline = await analyzeOffline(imagePath);
-  const penjelasan = await explain(offline.persen, offline.ciri, offline.sumber);
-  return {
-    persen_ai: offline.persen,
-    penjelasan,
-    metode: 'analisis offline (EXIF + statistik)'
+  const penjelasan = await explain(result.persen, result.ciri || [], result.sumber);
+  
+  return { 
+    persen_ai: result.persen, 
+    penjelasan: penjelasan, 
+    metode: result.sumber 
   };
 }
 
