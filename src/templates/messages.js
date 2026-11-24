@@ -16,6 +16,9 @@ Cek ke sumber terpercaya: TurnBackHoax.id atau Cekfakta.com
 ✋ *N — Nyatakan (Jangan Sebar)*
 Kalau masih ragu, jangan disebar dulu.
 
+🛡️ *G — Gagalkan Penyebaran (Jangan Sebar)*
+Jika terbukti hoax atau AI, gagalkan penyebarannya.
+
 Terima kasih sudah jadi Bunda yang cerdas digital! 💪`,
 
   default: `Halo Bunda! 👋 Saya *Bot S.A.R.I.N.G.*, teman digital Bunda.
