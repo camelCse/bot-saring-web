@@ -1,48 +1,103 @@
 const fs = require('fs');
-const Groq = require('groq-sdk');
 const exifr = require('exifr');
 const sharp = require('sharp');
-const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const HF_API = 'https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector';
-const TEXT_MODEL = 'openai/gpt-oss-120b';
 
-// 1. Coba HuggingFace (Maksimal 5 detik agar tidak timeout Vercel)
-async function tryHF(imagePath) {
-  if (!process.env.HF_TOKEN) {
-    console.log('[HF] GAGAL: HF_TOKEN tidak ada');
+// ==========================================
+// 1. GEMINI VISION (Paling Akurat & Penjelasan Tajam)
+// ==========================================
+async function detectWithGemini(imagePath) {
+  if (!process.env.GEMINI_API_KEY) {
+    console.log('[Detector] GEMINI_API_KEY kosong, skip.');
     return null;
   }
-  try {
-    const imageBuffer = fs.readFileSync(imagePath);
-    
-    // Gunakan axios yang lebih stabil di Vercel
-    const response = await axios.post(HF_API, imageBuffer, {
-      headers: {
-        'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-        'Content-Type': 'application/octet-stream'
-      },
-      timeout: 9000 // Naikkan batas waktu ke 9 detik (maksimal Vercel 10 detik)
-    });
 
-    const data = response.data;
-    if (Array.isArray(data)) {
-      const artificial = data.find(d => d.label === 'artificial' || d.label === 'fake');
-      if (artificial) return { persen: Math.round(artificial.score * 100), sumber: 'HuggingFace AI' };
-    }
-    console.log('[HF] GAGAL: Format response tidak dikenali', data);
-    return null;
+  try {
+    console.log('[Detector] Mencoba Gemini Vision...');
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const imageBuffer = fs.readFileSync(imagePath);
+
+    const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
+Analisis gambar ini dengan SANGAT TELITI apakah ini buatan AI atau foto asli.
+
+PERIKSA DENGAN CERMAT:
+1. Tangan & jari: jumlah, proporsi, bentuk aneh?
+2. Wajah: tekstur kulit, mata, gigi, telinga, simetri
+3. Teks/tulisan dalam gambar: jelas, konsisten, atau kacau?
+4. Latar belakang: blur aneh, objek tidak masuk akal, distorsi?
+5. Pencahayaan & bayangan: konsisten atau tidak?
+6. Detail kecil: rambut, kancing, perhiasan, aksesoris
+7. Artefak visual: pola aneh, tepi tidak tajam
+
+Balas HANYA dalam JSON format ini (tanpa teks lain):
+{
+  "persen_ai": <angka 0-100>,
+  "penjelasan": "<3-4 kalimat SPESIFIK menyebutkan ciri visual KONKRET yang terlihat di gambar ini. Bahasa Indonesia hangat, pakai 'Bunda', tanpa istilah teknis>"
+}`;
+
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { mimeType: 'image/jpeg', data: imageBuffer.toString('base64') } }
+    ]);
+
+    const raw = result.response.text().trim();
+    console.log('[Detector] Gemini response:', raw.substring(0, 300));
+
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON tidak ditemukan');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return {
+      persen_ai: Math.max(0, Math.min(100, Math.round(parsed.persen_ai))),
+      penjelasan: parsed.penjelasan,
+      metode: 'Gemini Vision AI'
+    };
   } catch (err) {
-    console.log('[HF] GAGAL:', err.message);
+    console.warn('[Detector] Gemini gagal:', err.message);
     return null;
   }
 }
 
-// 2. Analisis Offline (Fallback)
+// ==========================================
+// 2. HUGGINGFACE (Backup skor akurat)
+// ==========================================
+async function detectWithHF(imagePath) {
+  if (!process.env.HF_TOKEN) return null;
+  try {
+    const imageBuffer = fs.readFileSync(imagePath);
+    console.log('[Detector] Mencoba HuggingFace...');
+    const response = await fetch(HF_API, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+        'Content-Type': 'application/octet-stream'
+      },
+      body: imageBuffer,
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      const artificial = data.find(d => d.label === 'artificial' || d.label === 'fake');
+      if (artificial) return Math.round(artificial.score * 100);
+    }
+    return null;
+  } catch (err) {
+    console.warn('[Detector] HF gagal:', err.message);
+    return null;
+  }
+}
+
+// ==========================================
+// 3. OFFLINE (Last resort - hanya jika semua API mati)
+// ==========================================
 async function analyzeOffline(imagePath) {
   const buffer = fs.readFileSync(imagePath);
-  let persen = 50; 
+  let persen = 50;
   const ciri = [];
 
   try {
@@ -50,60 +105,53 @@ async function analyzeOffline(imagePath) {
     if (!exif || Object.keys(exif).length === 0) {
       persen += 20;
       ciri.push('tidak ada metadata kamera');
-    } else {
-      if (exif.Make || exif.Model) persen -= 20;
+    } else if (exif.Make || exif.Model) {
+      persen -= 25;
+      ciri.push(`ada info kamera ${exif.Make || exif.Model}`);
     }
-  } catch (err) {}
+  } catch (e) {}
 
   try {
     const meta = await sharp(buffer).metadata();
-    if (meta.width === meta.height && (meta.width === 512 || meta.width === 1024)) {
+    if (meta.width === 1024 && meta.height === 1024) {
       persen += 15;
-      ciri.push('resolusi persegi khas AI');
+      ciri.push('resolusi persis 1024x1024 (khas AI)');
     }
-  } catch (err) {}
+  } catch (e) {}
 
-  persen = Math.max(10, Math.min(95, persen));
-  return { persen, sumber: 'Analisis Offline (Ciri Visual)', ciri };
+  persen = Math.max(5, Math.min(95, persen));
+  return { persen, ciri };
 }
 
-// 3. Penjelasan dari Groq (Selalu menghasilkan teks)
-async function explain(persen, ciri, sumber) {
-  const ciriText = ciri.length > 0 ? ciri.join(', ') : 'tidak ada ciri khusus';
-  try {
-    const completion = await groq.chat.completions.create({
-      model: TEXT_MODEL,
-      messages: [{
-        role: 'user',
-        content: `Sistem mendeteksi gambar ini memiliki skor ${persen}% AI (metode: ${sumber}, ciri: ${ciriText}).
-Berikan penjelasan SINGKAT (maks 3 kalimat) bahasa Indonesia hangat untuk ibu-ibu PKK. Pakai kata "Bunda". Sebutkan alasan berdasarkan skor dan ciri tersebut. Jangan pakai istilah teknis.`
-      }],
-      max_tokens: 200,
-      temperature: 0.7
-    });
-    return completion.choices[0].message.content.trim();
-  } catch (err) {
-    if (persen > 70) return `Bunda, gambar ini kemungkinan besar dibuat AI (${persen}%). Ciri: mungkin tekstur terlalu halus atau tidak ada info kamera. Jangan disebar dulu ya 💐`;
-    if (persen > 40) return `Bunda, gambar ini meragukan (${persen}% AI). Sebaiknya dicek ke sumber aslinya dulu sebelum bertindak 💐`;
-    return `Bunda, gambar ini kemungkinan asli (hanya ${persen}% AI). Tapi tetap hati-hati saat menerima pesan berantai ya 💐`;
-  }
-}
-
-// 4. Fungsi Utama
+// ==========================================
+// MAIN
+// ==========================================
 async function detect(imagePath) {
-  let result = await tryHF(imagePath);
-  
-  if (!result) {
-    console.log('[Detector] Beralih ke analisis offline');
-    result = await analyzeOffline(imagePath);
+  // Prioritas 1: Gemini Vision (akurat + penjelasan tajam)
+  const geminiResult = await detectWithGemini(imagePath);
+  if (geminiResult) {
+    console.log('[Detector] ✅ Berhasil dengan Gemini');
+    return geminiResult;
   }
 
-  const penjelasan = await explain(result.persen, result.ciri || [], result.sumber);
-  
-  return { 
-    persen_ai: result.persen, 
-    penjelasan: penjelasan, 
-    metode: result.sumber 
+  // Prioritas 2: HuggingFace
+  const hfPersen = await detectWithHF(imagePath);
+  if (hfPersen !== null) {
+    console.log('[Detector] ✅ Berhasil dengan HF');
+    return {
+      persen_ai: hfPersen,
+      penjelasan: `Bunda, sistem mendeteksi gambar ini ${hfPersen}% kemungkinan dibuat AI. Ciri umum gambar AI: jari tangan tidak natural, teks kacau, atau bayangan aneh. Kalau ragu, jangan disebar dulu ya 💐`,
+      metode: 'HuggingFace'
+    };
+  }
+
+  // Prioritas 3: Offline (terakhir)
+  console.log('[Detector] ⚠️ Semua API gagal, pakai offline');
+  const offline = await analyzeOffline(imagePath);
+  return {
+    persen_ai: offline.persen,
+    penjelasan: `Bunda, internet sedang lambat jadi analisis kurang mendalam (${offline.persen}%). Ciri terdeteksi: ${offline.ciri.join(', ') || 'tidak spesifik'}. Coba lagi nanti atau kirim ke bot chat untuk tanya langsung ya 💐`,
+    metode: 'Analisis offline (terbatas)'
   };
 }
 
