@@ -13,7 +13,7 @@ async function detectWithGemini(imagePath) {
   try {
     const imageBuffer = fs.readFileSync(imagePath);
     const base64 = imageBuffer.toString('base64');
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
     
     const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
 Analisis gambar ini dengan SANGAT TELITI apakah ini buatan AI atau foto asli.
