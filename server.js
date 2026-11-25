@@ -109,6 +109,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
+// Endpoint untuk cek variabel (HAPUS saat sudah production!)
+app.get('/api/check-env', (req, res) => {
+  res.json({
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY ? "✅ Terbaca (Panjang: " + process.env.GEMINI_API_KEY.length + ")" : "❌ KOSONG",
+    GROQ_API_KEY: process.env.GROQ_API_KEY ? "✅ Terbaca" : "❌ KOSONG",
+    HF_TOKEN: process.env.HF_TOKEN ? "✅ Terbaca" : "❌ KOSONG"
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`\n✅ Bot S.A.R.I.N.G. berjalan di http://localhost:${PORT}\n`);
 });
