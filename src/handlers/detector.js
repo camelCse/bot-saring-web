@@ -2,28 +2,11 @@ const fs = require('fs');
 const exifr = require('exifr');
 const sharp = require('sharp');
 
-// Daftar model yang akan dicoba satu per satu
+// MENGGUNAKAN MODEL YANG ADA DI DAFTAR API KEY ANDA
 const GEMINI_MODELS = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro-latest',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-exp',
-  'gemini-1.0-pro-vision-latest'
+  'gemini-2.5-flash', 
+  'gemini-flash-latest'
 ];
-
-async function listAvailableModels() {
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
-    const data = await res.json();
-    if (data.models) {
-      return data.models.map(m => m.name.replace('models/', '')).join(', ');
-    }
-    return JSON.stringify(data);
-  } catch (e) {
-    return 'Gagal mengambil daftar model';
-  }
-}
 
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
@@ -48,7 +31,6 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
 
   let lastError = "";
 
-  // COBA SEMUA MODEL SATU PER SATU
   for (const model of GEMINI_MODELS) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
@@ -63,12 +45,13 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
       
       if (!response.ok) {
         lastError = data.error?.message || "Error tidak diketahui";
-        continue; // Gagal, coba model berikutnya
+        continue; 
       }
 
       const raw = data.candidates[0].content.parts[0].text.trim();
       const cleaned = raw.replace(/```json|```/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      
       if (!jsonMatch) {
         lastError = "Format JSON tidak ditemukan";
         continue;
@@ -87,9 +70,7 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
     }
   }
 
-  // Jika semua model gagal, tampilkan daftar model yang tersedia untuk API Key ini
-  const available = await listAvailableModels();
-  return { error: `Semua model gagal. Error terakhir: ${lastError}. Model yang tersedia di API Key Anda: [${available}]` };
+  return { error: `Error: ${lastError}` };
 }
 
 // ==========================================
@@ -150,7 +131,7 @@ async function detect(imagePath) {
   const offline = await analyzeOffline(imagePath);
   return {
     persen_ai: offline.persen,
-    penjelasan: `[OFFLINE] ${offline.ciri.join(', ')}. INFO ERROR: ${geminiResult?.error || 'Tidak diketahui'}`,
+    penjelasan: `[OFFLINE] ${offline.ciri.join(', ')}. INFO: ${geminiResult?.error || 'Tidak diketahui'}`,
     metode: 'Analisis offline'
   };
 }
