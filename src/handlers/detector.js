@@ -3,43 +3,29 @@ const exifr = require('exifr');
 const sharp = require('sharp');
 
 // ==========================================
-// 1. GEMINI VISION (Direct REST API - Tanpa Library)
+// 1. GEMINI VISION (Direct REST API)
 // ==========================================
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
-    return { error: "❌ GEMINI_API_KEY KOSONG di Vercel. Cek Settings > Environment Variables." };
+    return { error: "❌ GEMINI_API_KEY KOSONG. Cek Vercel Settings > Environment Variables." };
   }
 
   try {
     const imageBuffer = fs.readFileSync(imagePath);
     const base64 = imageBuffer.toString('base64');
-    
-    // Panggil langsung ke server Google
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
     
     const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
 Analisis gambar ini dengan SANGAT TELITI apakah ini buatan AI atau foto asli.
-
-PERIKSA DENGAN CERMAT:
-1. Tangan & jari: jumlah, proporsi, bentuk aneh?
-2. Wajah: tekstur kulit, mata, gigi, telinga, simetri
-3. Teks/tulisan dalam gambar: jelas, konsisten, atau kacau?
-4. Latar belakang: blur aneh, objek tidak masuk akal, distorsi?
-5. Pencahayaan & bayangan: konsisten atau tidak?
-
+PERIKSA: Tangan/jari, Wajah (kulit, mata, gigi), Teks/tulisan, Latar belakang, dan Pencahayaan.
 Balas HANYA dalam JSON format ini (tanpa teks lain):
 {
   "persen_ai": <angka 0-100>,
-  "penjelasan": "<3-4 kalimat SPESIFIK menyebutkan ciri visual KONKRET yang terlihat di gambar ini. Bahasa Indonesia hangat, pakai 'Bunda', tanpa istilah teknis>"
+  "penjelasan": "<3-4 kalimat SPESIFIK menyebutkan ciri visual KONKRET. Bahasa Indonesia hangat, pakai 'Bunda'>"
 }`;
 
     const payload = {
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: "image/jpeg", data: base64 } }
-        ]
-      }]
+      contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }]
     };
 
     const response = await fetch(url, {
@@ -49,16 +35,11 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
     });
 
     const data = await response.json();
-
-    if (!response.ok) {
-      // Tangkap pesan error asli dari Google
-      throw new Error(data.error?.message || "Gagal terhubung ke Google");
-    }
+    if (!response.ok) throw new Error(data.error?.message || "Gagal terhubung ke Google");
 
     const raw = data.candidates[0].content.parts[0].text.trim();
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    
     if (!jsonMatch) throw new Error('Format JSON tidak ditemukan');
     const parsed = JSON.parse(jsonMatch[0]);
 
@@ -69,7 +50,7 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
     };
   } catch (err) {
     console.error('[Detector] Error Gemini:', err.message);
-    return { error: "Error Gemini: " + err.message };
+    return { error: "ERROR GEMINI: " + err.message }; // MENAMPILKAN ERROR ASLI DI LAYAR
   }
 }
 
@@ -82,10 +63,7 @@ async function detectWithHF(imagePath) {
     const imageBuffer = fs.readFileSync(imagePath);
     const response = await fetch('https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-        'Content-Type': 'application/octet-stream'
-      },
+      headers: { 'Authorization': `Bearer ${process.env.HF_TOKEN}`, 'Content-Type': 'application/octet-stream' },
       body: imageBuffer,
       signal: AbortSignal.timeout(6000)
     });
@@ -96,9 +74,7 @@ async function detectWithHF(imagePath) {
       if (artificial) return Math.round(artificial.score * 100);
     }
     return null;
-  } catch (err) {
-    return null;
-  }
+  } catch (err) { return null; }
 }
 
 // ==========================================
@@ -125,27 +101,18 @@ async function analyzeOffline(imagePath) {
 // MAIN
 // ==========================================
 async function detect(imagePath) {
-  // Coba Gemini
   const geminiResult = await detectWithGemini(imagePath);
-  
-  // Jika Gemini mengembalikan hasil sukses
   if (geminiResult && !geminiResult.error) return geminiResult;
 
-  // Jika HF ada, pakai HF
   const hfPersen = await detectWithHF(imagePath);
   if (hfPersen !== null) {
-    return {
-      persen_ai: hfPersen,
-      penjelasan: `Bunda, sistem mendeteksi gambar ini ${hfPersen}% kemungkinan dibuat AI.`,
-      metode: 'HuggingFace'
-    };
+    return { persen_ai: hfPersen, penjelasan: `Bunda, sistem mendeteksi gambar ini ${hfPersen}% kemungkinan dibuat AI.`, metode: 'HuggingFace' };
   }
 
-  // Jika semuanya gagal, jalankan offline dan TAMPILKAN ERROR GEMINI
   const offline = await analyzeOffline(imagePath);
   return {
     persen_ai: offline.persen,
-    penjelasan: `Sistem offline mendeteksi: ${offline.ciri.join(', ')}. \n\nINFO ERROR: ${geminiResult?.error || 'Tidak diketahui'}`,
+    penjelasan: `[OFFLINE] ${offline.ciri.join(', ')}. INFO ERROR: ${geminiResult?.error || 'Tidak diketahui'}`,
     metode: 'Analisis offline'
   };
 }
