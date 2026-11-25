@@ -8,6 +8,9 @@ const GEMINI_MODELS = [
   'gemini-2.5-flash'
 ];
 
+// ==========================================
+// 1. GEMINI VISION (AI Utama)
+// ==========================================
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
     return { error: "❌ GEMINI_API_KEY KOSONG." };
@@ -25,13 +28,12 @@ Balas HANYA dalam JSON format ini:
   const payload = {
     contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }],
     generationConfig: {
-      responseMimeType: "application/json" // Paksa output JSON
+      responseMimeType: "application/json"
     }
   };
 
   let lastError = "";
 
-  // COBA MODEL SATU KALI SAJA (TANPA RETRY) + TIMEOUT 4 DETIK
   for (const model of GEMINI_MODELS) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
@@ -40,7 +42,7 @@ Balas HANYA dalam JSON format ini:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(4000) // BATAS MAKSIMAL 4 DETIK PER MODEL
+        signal: AbortSignal.timeout(4000) // Maksimal 4 detik
       });
 
       if (!response.ok) {
@@ -53,6 +55,7 @@ Balas HANYA dalam JSON format ini:
       const raw = data.candidates[0].content.parts[0].text.trim();
       const cleaned = raw.replace(/```json|```/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      
       if (!jsonMatch) {
         lastError = "Format JSON tidak valid";
         continue;
@@ -67,7 +70,6 @@ Balas HANYA dalam JSON format ini:
       };
       
     } catch (err) {
-      // Jika timeout atau error jaringan, langsung skip ke model berikutnya
       lastError = err.name === 'TimeoutError' ? "Timeout (4 detik)" : err.message;
     }
   }
@@ -76,7 +78,7 @@ Balas HANYA dalam JSON format ini:
 }
 
 // ==========================================
-// 2. HUGGINGFACE (Backup) - Timeout 3 detik
+// 2. HUGGINGFACE (Backup AI)
 // ==========================================
 async function detectWithHF(imagePath) {
   if (!process.env.HF_TOKEN) return null;
@@ -86,7 +88,7 @@ async function detectWithHF(imagePath) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.HF_TOKEN}`, 'Content-Type': 'application/octet-stream' },
       body: imageBuffer,
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000) // Maksimal 3 detik
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -99,42 +101,62 @@ async function detectWithHF(imagePath) {
 }
 
 // ==========================================
-// 3. OFFLINE (Instant, tanpa internet)
+// 3. OFFLINE (Analisis Cepat / Fallback)
 // ==========================================
 async function analyzeOffline(imagePath) {
   const buffer = fs.readFileSync(imagePath);
   let persen = 50;
   const ciri = [];
+  
   try {
     const exif = await exifr.parse(buffer, ['Make', 'Model', 'ISO']);
-    if (!exif || Object.keys(exif).length === 0) { persen += 20; ciri.push('tidak ada metadata kamera'); }
-    else if (exif.Make || exif.Model) { persen -= 25; ciri.push(`ada info kamera ${exif.Make || exif.Model}`); }
+    if (!exif || Object.keys(exif).length === 0) { 
+      persen += 20; 
+      ciri.push('tidak ada metadata kamera'); 
+    } else if (exif.Make || exif.Model) { 
+      persen -= 25; 
+      ciri.push(`ada info kamera ${exif.Make || exif.Model}`); 
+    }
   } catch (e) {}
+  
   try {
     const meta = await sharp(buffer).metadata();
-    if (meta.width === 1024 && meta.height === 1024) { persen += 15; ciri.push('resolusi persis 1024x1024 (khas AI)'); }
+    if (meta.width === 1024 && meta.height === 1024) { 
+      persen += 15; 
+      ciri.push('resolusi persis 1024x1024 (khas AI)'); 
+    }
   } catch (e) {}
+  
   persen = Math.max(5, Math.min(95, persen));
   return { persen, ciri };
 }
 
 // ==========================================
-// MAIN
+// MAIN (Dengan Copywriting Profesional)
 // ==========================================
 async function detect(imagePath) {
+  // 1. Coba Gemini (AI Utama)
   const geminiResult = await detectWithGemini(imagePath);
   if (geminiResult && !geminiResult.error) return geminiResult;
 
+  // 2. Coba HuggingFace (Backup AI)
   const hfPersen = await detectWithHF(imagePath);
   if (hfPersen !== null) {
-    return { persen_ai: hfPersen, penjelasan: `Bunda, sistem mendeteksi gambar ini ${hfPersen}% kemungkinan dibuat AI.`, metode: 'HuggingFace' };
+    return { 
+      persen_ai: hfPersen, 
+      penjelasan: `Bunda, sistem mendeteksi gambar ini ${hfPersen}% kemungkinan dibuat AI. Ciri umum gambar AI: jari tidak natural, teks kacau, atau bayangan aneh. Kalau ragu, jangan disebar dulu ya 💐`, 
+      metode: 'Analisis Sistem' 
+    };
   }
 
+  // 3. Fallback Offline (Analisis Cepat)
   const offline = await analyzeOffline(imagePath);
+  
+  // Menyembunyikan error teknis, diganti dengan pesan empatik
   return {
     persen_ai: offline.persen,
-    penjelasan: `[MODE CEPAT] Ciri: ${offline.ciri.join(', ')}. Layanan AI utama sedang sibuk. Coba lagi sebentar ya Bun.`,
-    metode: 'Analisis offline'
+    penjelasan: `Bunda, ini hasil *Analisis Cepat* kami (${offline.persen}%). Ciri terdeteksi: ${offline.ciri.join(', ')}. \n\nUntuk penjelasan yang lebih tajam, tunggu beberapa saat lalu klik "Coba Foto Lain" ya 💐`,
+    metode: 'Analisis Cepat (Offline)'
   };
 }
 
