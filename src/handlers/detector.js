@@ -3,21 +3,23 @@ const exifr = require('exifr');
 const sharp = require('sharp');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const HF_API = 'https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector';
 
 // ==========================================
-// 1. GEMINI VISION (Paling Akurat & Penjelasan Tajam)
+// 1. GEMINI VISION
 // ==========================================
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
-    console.log('[Detector] GEMINI_API_KEY kosong, skip.');
+    console.log('[Detector] ❌ GEMINI_API_KEY tidak ditemukan di .env');
     return null;
   }
 
   try {
     console.log('[Detector] Mencoba Gemini Vision...');
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    
+    // Menggunakan model paling stabil saat ini
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
     const imageBuffer = fs.readFileSync(imagePath);
 
     const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
@@ -44,11 +46,11 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
     ]);
 
     const raw = result.response.text().trim();
-    console.log('[Detector] Gemini response:', raw.substring(0, 300));
+    console.log('[Detector] ✅ Gemini Response:', raw.substring(0, 200));
 
     const cleaned = raw.replace(/```json|```/g, '').trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('JSON tidak ditemukan');
+    if (!jsonMatch) throw new Error('Format JSON tidak ditemukan');
     const parsed = JSON.parse(jsonMatch[0]);
 
     return {
@@ -57,13 +59,13 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
       metode: 'Gemini Vision AI'
     };
   } catch (err) {
-    console.warn('[Detector] Gemini gagal:', err.message);
+    console.error('[Detector] ❌ Error Gemini:', err.message);
     return null;
   }
 }
 
 // ==========================================
-// 2. HUGGINGFACE (Backup skor akurat)
+// 2. HUGGINGFACE (Backup)
 // ==========================================
 async function detectWithHF(imagePath) {
   if (!process.env.HF_TOKEN) return null;
@@ -79,7 +81,10 @@ async function detectWithHF(imagePath) {
       body: imageBuffer,
       signal: AbortSignal.timeout(8000)
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+       console.warn('[Detector] ❌ HF Error HTTP:', response.status);
+       return null;
+    }
     const data = await response.json();
     if (Array.isArray(data)) {
       const artificial = data.find(d => d.label === 'artificial' || d.label === 'fake');
@@ -87,38 +92,27 @@ async function detectWithHF(imagePath) {
     }
     return null;
   } catch (err) {
-    console.warn('[Detector] HF gagal:', err.message);
+    console.warn('[Detector] ❌ HF Gagal:', err.message);
     return null;
   }
 }
 
 // ==========================================
-// 3. OFFLINE (Last resort - hanya jika semua API mati)
+// 3. OFFLINE (Last resort)
 // ==========================================
 async function analyzeOffline(imagePath) {
   const buffer = fs.readFileSync(imagePath);
   let persen = 50;
   const ciri = [];
-
   try {
     const exif = await exifr.parse(buffer, ['Make', 'Model', 'ISO']);
-    if (!exif || Object.keys(exif).length === 0) {
-      persen += 20;
-      ciri.push('tidak ada metadata kamera');
-    } else if (exif.Make || exif.Model) {
-      persen -= 25;
-      ciri.push(`ada info kamera ${exif.Make || exif.Model}`);
-    }
+    if (!exif || Object.keys(exif).length === 0) { persen += 20; ciri.push('tidak ada metadata kamera'); }
+    else if (exif.Make || exif.Model) { persen -= 25; ciri.push(`ada info kamera ${exif.Make || exif.Model}`); }
   } catch (e) {}
-
   try {
     const meta = await sharp(buffer).metadata();
-    if (meta.width === 1024 && meta.height === 1024) {
-      persen += 15;
-      ciri.push('resolusi persis 1024x1024 (khas AI)');
-    }
+    if (meta.width === 1024 && meta.height === 1024) { persen += 15; ciri.push('resolusi persis 1024x1024 (khas AI)'); }
   } catch (e) {}
-
   persen = Math.max(5, Math.min(95, persen));
   return { persen, ciri };
 }
@@ -127,17 +121,11 @@ async function analyzeOffline(imagePath) {
 // MAIN
 // ==========================================
 async function detect(imagePath) {
-  // Prioritas 1: Gemini Vision (akurat + penjelasan tajam)
   const geminiResult = await detectWithGemini(imagePath);
-  if (geminiResult) {
-    console.log('[Detector] ✅ Berhasil dengan Gemini');
-    return geminiResult;
-  }
+  if (geminiResult) return geminiResult;
 
-  // Prioritas 2: HuggingFace
   const hfPersen = await detectWithHF(imagePath);
   if (hfPersen !== null) {
-    console.log('[Detector] ✅ Berhasil dengan HF');
     return {
       persen_ai: hfPersen,
       penjelasan: `Bunda, sistem mendeteksi gambar ini ${hfPersen}% kemungkinan dibuat AI. Ciri umum gambar AI: jari tangan tidak natural, teks kacau, atau bayangan aneh. Kalau ragu, jangan disebar dulu ya 💐`,
@@ -145,13 +133,12 @@ async function detect(imagePath) {
     };
   }
 
-  // Prioritas 3: Offline (terakhir)
   console.log('[Detector] ⚠️ Semua API gagal, pakai offline');
   const offline = await analyzeOffline(imagePath);
   return {
     persen_ai: offline.persen,
-    penjelasan: `Bunda, internet sedang lambat jadi analisis kurang mendalam (${offline.persen}%). Ciri terdeteksi: ${offline.ciri.join(', ') || 'tidak spesifik'}. Coba lagi nanti atau kirim ke bot chat untuk tanya langsung ya 💐`,
-    metode: 'Analisis offline (terbatas)'
+    penjelasan: `Bunda, koneksi ke AI sedang terputus. Hasil sementara menunjukkan ${offline.persen}%. Ciri: ${offline.ciri.join(', ') || 'tidak spesifik'}. Coba lagi nanti ya 💐`,
+    metode: 'Analisis offline'
   };
 }
 
