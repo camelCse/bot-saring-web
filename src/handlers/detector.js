@@ -2,20 +2,38 @@ const fs = require('fs');
 const exifr = require('exifr');
 const sharp = require('sharp');
 
-// ==========================================
-// 1. GEMINI VISION (Direct REST API)
-// ==========================================
+// Daftar model yang akan dicoba satu per satu
+const GEMINI_MODELS = [
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro-latest',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-exp',
+  'gemini-1.0-pro-vision-latest'
+];
+
+async function listAvailableModels() {
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
+    const data = await res.json();
+    if (data.models) {
+      return data.models.map(m => m.name.replace('models/', '')).join(', ');
+    }
+    return JSON.stringify(data);
+  } catch (e) {
+    return 'Gagal mengambil daftar model';
+  }
+}
+
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
-    return { error: "❌ GEMINI_API_KEY KOSONG. Cek Vercel Settings > Environment Variables." };
+    return { error: "❌ GEMINI_API_KEY KOSONG." };
   }
 
-  try {
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64 = imageBuffer.toString('base64');
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    
-    const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
+  const imageBuffer = fs.readFileSync(imagePath);
+  const base64 = imageBuffer.toString('base64');
+  
+  const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
 Analisis gambar ini dengan SANGAT TELITI apakah ini buatan AI atau foto asli.
 PERIKSA: Tangan/jari, Wajah (kulit, mata, gigi), Teks/tulisan, Latar belakang, dan Pencahayaan.
 Balas HANYA dalam JSON format ini (tanpa teks lain):
@@ -24,34 +42,54 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
   "penjelasan": "<3-4 kalimat SPESIFIK menyebutkan ciri visual KONKRET. Bahasa Indonesia hangat, pakai 'Bunda'>"
 }`;
 
-    const payload = {
-      contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }]
-    };
+  const payload = {
+    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }]
+  };
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+  let lastError = "";
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "Gagal terhubung ke Google");
+  // COBA SEMUA MODEL SATU PER SATU
+  for (const model of GEMINI_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    const raw = data.candidates[0].content.parts[0].text.trim();
-    const cleaned = raw.replace(/```json|```/g, '').trim();
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Format JSON tidak ditemukan');
-    const parsed = JSON.parse(jsonMatch[0]);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        lastError = data.error?.message || "Error tidak diketahui";
+        continue; // Gagal, coba model berikutnya
+      }
 
-    return {
-      persen_ai: Math.max(0, Math.min(100, Math.round(parsed.persen_ai))),
-      penjelasan: parsed.penjelasan,
-      metode: 'Gemini Vision AI (Akurat)'
-    };
-  } catch (err) {
-    console.error('[Detector] Error Gemini:', err.message);
-    return { error: "ERROR GEMINI: " + err.message }; // MENAMPILKAN ERROR ASLI DI LAYAR
+      const raw = data.candidates[0].content.parts[0].text.trim();
+      const cleaned = raw.replace(/```json|```/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        lastError = "Format JSON tidak ditemukan";
+        continue;
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      return {
+        persen_ai: Math.max(0, Math.min(100, Math.round(parsed.persen_ai))),
+        penjelasan: parsed.penjelasan,
+        metode: `Gemini Vision (${model})`
+      };
+      
+    } catch (err) {
+      lastError = err.message;
+    }
   }
+
+  // Jika semua model gagal, tampilkan daftar model yang tersedia untuk API Key ini
+  const available = await listAvailableModels();
+  return { error: `Semua model gagal. Error terakhir: ${lastError}. Model yang tersedia di API Key Anda: [${available}]` };
 }
 
 // ==========================================
