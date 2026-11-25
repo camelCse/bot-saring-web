@@ -2,11 +2,57 @@ const fs = require('fs');
 const exifr = require('exifr');
 const sharp = require('sharp');
 
-// MENGGUNAKAN MODEL YANG ADA DI DAFTAR API KEY ANDA
+// Daftar model cadangan (dari yang paling pintar ke paling ringan)
 const GEMINI_MODELS = [
-  'gemini-2.5-flash', 
-  'gemini-flash-latest'
+  'gemini-2.5-flash',
+  'gemini-flash-latest',
+  'gemini-2.5-flash-lite',
+  'gemini-3.5-flash-lite'
 ];
+
+// Fungsi untuk delay (jeda)
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function callGeminiWithRetry(model, payload, apiKey, maxRetries = 2) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        const errMsg = data.error?.message || "Error tidak diketahui";
+        // Jika error karena sibuk (503/429), tunggu lalu coba lagi
+        if ((response.status === 503 || response.status === 429) && attempt < maxRetries) {
+          console.log(`[Gemini] ${model} sibuk, coba lagi dalam ${attempt * 2} detik...`);
+          await sleep(attempt * 2000);
+          continue;
+        }
+        return { error: errMsg };
+      }
+
+      const raw = data.candidates[0].content.parts[0].text.trim();
+      const cleaned = raw.replace(/```json|```/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return { error: "Format JSON tidak ditemukan" };
+      
+      return { parsed: JSON.parse(jsonMatch[0]) };
+      
+    } catch (err) {
+      if (attempt < maxRetries) {
+        await sleep(attempt * 2000);
+        continue;
+      }
+      return { error: err.message };
+    }
+  }
+}
 
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
@@ -31,46 +77,25 @@ Balas HANYA dalam JSON format ini (tanpa teks lain):
 
   let lastError = "";
 
+  // COBA SEMUA MODEL SATU PER SATU
   for (const model of GEMINI_MODELS) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        lastError = data.error?.message || "Error tidak diketahui";
-        continue; 
-      }
-
-      const raw = data.candidates[0].content.parts[0].text.trim();
-      const cleaned = raw.replace(/```json|```/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      
-      if (!jsonMatch) {
-        lastError = "Format JSON tidak ditemukan";
-        continue;
-      }
-      
-      const parsed = JSON.parse(jsonMatch[0]);
-
+    console.log(`[Gemini] Mencoba model: ${model}`);
+    const result = await callGeminiWithRetry(model, payload, process.env.GEMINI_API_KEY);
+    
+    if (result.parsed) {
+      console.log(`[Gemini] ✅ Berhasil dengan ${model}`);
       return {
-        persen_ai: Math.max(0, Math.min(100, Math.round(parsed.persen_ai))),
-        penjelasan: parsed.penjelasan,
+        persen_ai: Math.max(0, Math.min(100, Math.round(result.parsed.persen_ai))),
+        penjelasan: result.parsed.penjelasan,
         metode: `Gemini Vision (${model})`
       };
-      
-    } catch (err) {
-      lastError = err.message;
     }
+    
+    lastError = result.error;
+    console.log(`[Gemini] ❌ ${model} gagal: ${result.error}`);
   }
 
-  return { error: `Error: ${lastError}` };
+  return { error: `Semua model Gemini sibuk. ${lastError}` };
 }
 
 // ==========================================
@@ -131,7 +156,7 @@ async function detect(imagePath) {
   const offline = await analyzeOffline(imagePath);
   return {
     persen_ai: offline.persen,
-    penjelasan: `[OFFLINE] ${offline.ciri.join(', ')}. INFO: ${geminiResult?.error || 'Tidak diketahui'}`,
+    penjelasan: `[MODE OFFLINE] Ciri: ${offline.ciri.join(', ')}. Info: AI utama sedang sibuk. Silakan coba lagi dalam 1-2 menit.`,
     metode: 'Analisis offline'
   };
 }
