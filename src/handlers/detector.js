@@ -2,57 +2,11 @@ const fs = require('fs');
 const exifr = require('exifr');
 const sharp = require('sharp');
 
-// Daftar model cadangan (dari yang paling pintar ke paling ringan)
+// Prioritas model: LITE dulu (paling cepat & jarang sibuk), baru FLASH
 const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-flash-latest',
   'gemini-2.5-flash-lite',
-  'gemini-3.5-flash-lite'
+  'gemini-2.5-flash'
 ];
-
-// Fungsi untuk delay (jeda)
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-async function callGeminiWithRetry(model, payload, apiKey, maxRetries = 2) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        const errMsg = data.error?.message || "Error tidak diketahui";
-        // Jika error karena sibuk (503/429), tunggu lalu coba lagi
-        if ((response.status === 503 || response.status === 429) && attempt < maxRetries) {
-          console.log(`[Gemini] ${model} sibuk, coba lagi dalam ${attempt * 2} detik...`);
-          await sleep(attempt * 2000);
-          continue;
-        }
-        return { error: errMsg };
-      }
-
-      const raw = data.candidates[0].content.parts[0].text.trim();
-      const cleaned = raw.replace(/```json|```/g, '').trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return { error: "Format JSON tidak ditemukan" };
-      
-      return { parsed: JSON.parse(jsonMatch[0]) };
-      
-    } catch (err) {
-      if (attempt < maxRetries) {
-        await sleep(attempt * 2000);
-        continue;
-      }
-      return { error: err.message };
-    }
-  }
-}
 
 async function detectWithGemini(imagePath) {
   if (!process.env.GEMINI_API_KEY) {
@@ -64,42 +18,65 @@ async function detectWithGemini(imagePath) {
   
   const prompt = `Kamu adalah pendeteksi gambar AI profesional untuk ibu-ibu PKK.
 Analisis gambar ini dengan SANGAT TELITI apakah ini buatan AI atau foto asli.
-PERIKSA: Tangan/jari, Wajah (kulit, mata, gigi), Teks/tulisan, Latar belakang, dan Pencahayaan.
-Balas HANYA dalam JSON format ini (tanpa teks lain):
-{
-  "persen_ai": <angka 0-100>,
-  "penjelasan": "<3-4 kalimat SPESIFIK menyebutkan ciri visual KONKRET. Bahasa Indonesia hangat, pakai 'Bunda'>"
-}`;
+PERIKSA: Tangan/jari, Wajah (kulit, mata, gigi), Teks, Latar belakang, Pencahayaan.
+Balas HANYA dalam JSON format ini:
+{"persen_ai": <0-100>, "penjelasan": "<3 kalimat SPESIFIK ciri visual KONKRET, bahasa hangat pakai 'Bunda'>"}`;
 
   const payload = {
-    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }]
+    contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64 } }] }],
+    generationConfig: {
+      responseMimeType: "application/json" // Paksa output JSON
+    }
   };
 
   let lastError = "";
 
-  // COBA SEMUA MODEL SATU PER SATU
+  // COBA MODEL SATU KALI SAJA (TANPA RETRY) + TIMEOUT 4 DETIK
   for (const model of GEMINI_MODELS) {
-    console.log(`[Gemini] Mencoba model: ${model}`);
-    const result = await callGeminiWithRetry(model, payload, process.env.GEMINI_API_KEY);
-    
-    if (result.parsed) {
-      console.log(`[Gemini] ✅ Berhasil dengan ${model}`);
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(4000) // BATAS MAKSIMAL 4 DETIK PER MODEL
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        lastError = data.error?.message || "Error HTTP " + response.status;
+        continue;
+      }
+
+      const data = await response.json();
+      const raw = data.candidates[0].content.parts[0].text.trim();
+      const cleaned = raw.replace(/```json|```/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        lastError = "Format JSON tidak valid";
+        continue;
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+
       return {
-        persen_ai: Math.max(0, Math.min(100, Math.round(result.parsed.persen_ai))),
-        penjelasan: result.parsed.penjelasan,
+        persen_ai: Math.max(0, Math.min(100, Math.round(parsed.persen_ai))),
+        penjelasan: parsed.penjelasan,
         metode: `Gemini Vision (${model})`
       };
+      
+    } catch (err) {
+      // Jika timeout atau error jaringan, langsung skip ke model berikutnya
+      lastError = err.name === 'TimeoutError' ? "Timeout (4 detik)" : err.message;
     }
-    
-    lastError = result.error;
-    console.log(`[Gemini] ❌ ${model} gagal: ${result.error}`);
   }
 
-  return { error: `Semua model Gemini sibuk. ${lastError}` };
+  return { error: lastError };
 }
 
 // ==========================================
-// 2. HUGGINGFACE (Backup)
+// 2. HUGGINGFACE (Backup) - Timeout 3 detik
 // ==========================================
 async function detectWithHF(imagePath) {
   if (!process.env.HF_TOKEN) return null;
@@ -109,7 +86,7 @@ async function detectWithHF(imagePath) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${process.env.HF_TOKEN}`, 'Content-Type': 'application/octet-stream' },
       body: imageBuffer,
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(3000)
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -122,7 +99,7 @@ async function detectWithHF(imagePath) {
 }
 
 // ==========================================
-// 3. OFFLINE (Fallback)
+// 3. OFFLINE (Instant, tanpa internet)
 // ==========================================
 async function analyzeOffline(imagePath) {
   const buffer = fs.readFileSync(imagePath);
@@ -156,7 +133,7 @@ async function detect(imagePath) {
   const offline = await analyzeOffline(imagePath);
   return {
     persen_ai: offline.persen,
-    penjelasan: `[MODE OFFLINE] Ciri: ${offline.ciri.join(', ')}. Info: AI utama sedang sibuk. Silakan coba lagi dalam 1-2 menit.`,
+    penjelasan: `[MODE CEPAT] Ciri: ${offline.ciri.join(', ')}. Layanan AI utama sedang sibuk. Coba lagi sebentar ya Bun.`,
     metode: 'Analisis offline'
   };
 }

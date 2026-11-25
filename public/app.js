@@ -57,7 +57,7 @@ btnDetect.addEventListener('click', async () => {
   skeletonDiv.style.display = 'block';
   hasilDiv.style.display = 'none';
 
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 500));
 
   const formData = new FormData();
   formData.append('image', selectedFile);
